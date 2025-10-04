@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('direccion');
             $table->string('ciudad');
-            $table->string('telefono');
+            $table->string('telefono', 9);
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sucursals');
+        Schema::dropIfExists('sucursales');
     }
 };

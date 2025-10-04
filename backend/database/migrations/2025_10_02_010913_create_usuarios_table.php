@@ -16,9 +16,12 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('rol', ['administrador', 'colaborador']);
-            $table->string('id_sucursal')->nullable();
+            $table->enum('rol', ['Administrador', 'Colaborador']);
+            $table->unsignedBigInteger('idSucursal')->nullable();
             $table->timestamps();
+
+            //Relacion Sucursal
+            $table->foreign('idSucursal')->references('id')->on('sucursales')->onDelete('cascade');
         });
     }
 
