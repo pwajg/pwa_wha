@@ -5,11 +5,12 @@ import Usuarios from './components/Usuarios.vue'
 </script>
 
 <template>
-  <div>
+<!--   <div>
     <h1 class="text-2xl font-bold">Gestión de Usuarios</h1>
     <Usuarios />
   </div>
-  <HelloWorld msg="Vite + Vue" />
+  <HelloWorld msg="Vite + Vue" /> -->
+  <router-view />
 </template>
 
 <style scoped>
