@@ -10,15 +10,14 @@ class Sucursal extends Model
     use HasFactory;
 
     protected $table = 'sucursales';
-    protected $primaryKey = 'idSucursal';
+    protected $primaryKey = 'id';
     public $timestamps = true;
 
     protected $fillable = [
-        'nombreSucursal',
+        'nombre',
         'direccion',
-        'telefono',
-        'email',
-        'responsable'
+        'ciudad',
+        'telefono'
     ];
 
     protected $casts = [
@@ -27,13 +26,18 @@ class Sucursal extends Model
     ];
 
     // Relaciones
+    public function usuarios()
+    {
+        return $this->hasMany(Usuario::class, 'idSucursal', 'id');
+    }
+
     public function encomiendasOrigen()
     {
-        return $this->hasMany(Encomienda::class, 'idSucursalOrigen', 'idSucursal');
+        return $this->hasMany(Encomienda::class, 'idSucursalOrigen', 'id');
     }
 
     public function encomiendasDestino()
     {
-        return $this->hasMany(Encomienda::class, 'idSucursalDestino', 'idSucursal');
+        return $this->hasMany(Encomienda::class, 'idSucursalDestino', 'id');
     }
 }

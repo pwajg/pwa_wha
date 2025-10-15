@@ -44,12 +44,12 @@ class Encomienda extends Model
 
     public function sucursalOrigen()
     {
-        return $this->belongsTo(Sucursal::class, 'idSucursalOrigen', 'idSucursal');
+        return $this->belongsTo(Sucursal::class, 'idSucursalOrigen', 'id');
     }
 
     public function sucursalDestino()
     {
-        return $this->belongsTo(Sucursal::class, 'idSucursalDestino', 'idSucursal');
+        return $this->belongsTo(Sucursal::class, 'idSucursalDestino', 'id');
     }
 
     public function estados()

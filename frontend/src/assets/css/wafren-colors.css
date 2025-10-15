@@ -1,0 +1,111 @@
+/* 
+🎨 Paleta de colores Wafren - Variables CSS
+Sistema de colores para toda la aplicación
+*/
+
+:root {
+  /* 1️⃣ Primario – Dorado Premium */
+  --wafren-gold-dark: #B6862C;      /* Botones principales, logotipo, detalles de marca */
+  --wafren-gold-medium: #D4A43E;   /* Hover en botones, íconos destacados */
+  --wafren-gold-light: #EACB75;    /* Líneas divisorias o acentos suaves */
+  --wafren-gold-soft: #FFF2C7;     /* Fondos sutiles en secciones premium */
+  
+  /* 2️⃣ Secundario – Negro Grafito */
+  --wafren-black-pure: #0B0B0B;     /* Header, footer, texto principal sobre fondo claro */
+  --wafren-black-graphite: #1C1C1C; /* Fondos principales */
+  --wafren-gray-charcoal: #2B2B2B;  /* Tarjetas, sombras o contraste sutil */
+  
+  /* 3️⃣ Neutros – Equilibrio visual */
+  --wafren-gray-light: #E5E5E5;     /* Fondos de secciones */
+  --wafren-gray-medium: #CFCFCF;    /* Bordes y líneas divisorias */
+  --wafren-white-pure: #FFFFFF;     /* Texto sobre fondos oscuros o dorados */
+  
+  /* 4️⃣ Acentos – Energía y tecnología */
+  --wafren-blue-teal: #008B8B;      /* Enlaces o indicadores de estado */
+  --wafren-green-success: #2ECC71;  /* Confirmaciones o etiquetas de envío completado */
+  --wafren-red-alert: #E74C3C;      /* Errores o advertencias importantes */
+  
+  /* Gradientes predefinidos */
+  --wafren-gradient-gold: linear-gradient(135deg, var(--wafren-gold-dark) 0%, var(--wafren-gold-medium) 100%);
+  --wafren-gradient-dark: linear-gradient(135deg, var(--wafren-black-pure) 0%, var(--wafren-black-graphite) 100%);
+  --wafren-gradient-hero: linear-gradient(135deg, var(--wafren-gold-dark) 0%, var(--wafren-black-graphite) 100%);
+  
+  /* Sombras predefinidas */
+  --wafren-shadow-sm: 0 2px 4px rgba(11, 11, 11, 0.1);
+  --wafren-shadow-md: 0 4px 8px rgba(11, 11, 11, 0.15);
+  --wafren-shadow-lg: 0 8px 16px rgba(11, 11, 11, 0.2);
+  --wafren-shadow-xl: 0 16px 32px rgba(11, 11, 11, 0.25);
+  
+  /* Bordes redondeados */
+  --wafren-radius-sm: 6px;
+  --wafren-radius-md: 12px;
+  --wafren-radius-lg: 16px;
+  --wafren-radius-xl: 20px;
+  
+  /* Transiciones */
+  --wafren-transition-fast: 0.2s ease;
+  --wafren-transition-normal: 0.3s ease;
+  --wafren-transition-slow: 0.5s ease;
+}
+
+/* Clases de utilidad para colores */
+.text-gold-dark { color: var(--wafren-gold-dark); }
+.text-gold-medium { color: var(--wafren-gold-medium); }
+.text-gold-light { color: var(--wafren-gold-light); }
+.text-black-pure { color: var(--wafren-black-pure); }
+.text-black-graphite { color: var(--wafren-black-graphite); }
+.text-gray-charcoal { color: var(--wafren-gray-charcoal); }
+.text-gray-light { color: var(--wafren-gray-light); }
+.text-gray-medium { color: var(--wafren-gray-medium); }
+.text-white-pure { color: var(--wafren-white-pure); }
+.text-blue-teal { color: var(--wafren-blue-teal); }
+.text-green-success { color: var(--wafren-green-success); }
+.text-red-alert { color: var(--wafren-red-alert); }
+
+.bg-gold-dark { background-color: var(--wafren-gold-dark); }
+.bg-gold-medium { background-color: var(--wafren-gold-medium); }
+.bg-gold-light { background-color: var(--wafren-gold-light); }
+.bg-gold-soft { background-color: var(--wafren-gold-soft); }
+.bg-black-pure { background-color: var(--wafren-black-pure); }
+.bg-black-graphite { background-color: var(--wafren-black-graphite); }
+.bg-gray-charcoal { background-color: var(--wafren-gray-charcoal); }
+.bg-gray-light { background-color: var(--wafren-gray-light); }
+.bg-gray-medium { background-color: var(--wafren-gray-medium); }
+.bg-white-pure { background-color: var(--wafren-white-pure); }
+.bg-blue-teal { background-color: var(--wafren-blue-teal); }
+.bg-green-success { background-color: var(--wafren-green-success); }
+.bg-red-alert { background-color: var(--wafren-red-alert); }
+
+.border-gold-dark { border-color: var(--wafren-gold-dark); }
+.border-gold-medium { border-color: var(--wafren-gold-medium); }
+.border-gold-light { border-color: var(--wafren-gold-light); }
+.border-black-pure { border-color: var(--wafren-black-pure); }
+.border-black-graphite { border-color: var(--wafren-black-graphite); }
+.border-gray-charcoal { border-color: var(--wafren-gray-charcoal); }
+.border-gray-light { border-color: var(--wafren-gray-light); }
+.border-gray-medium { border-color: var(--wafren-gray-medium); }
+.border-blue-teal { border-color: var(--wafren-blue-teal); }
+.border-green-success { border-color: var(--wafren-green-success); }
+.border-red-alert { border-color: var(--wafren-red-alert); }
+
+/* Clases de utilidad para gradientes */
+.bg-gradient-gold { background: var(--wafren-gradient-gold); }
+.bg-gradient-dark { background: var(--wafren-gradient-dark); }
+.bg-gradient-hero { background: var(--wafren-gradient-hero); }
+
+/* Clases de utilidad para sombras */
+.shadow-wafren-sm { box-shadow: var(--wafren-shadow-sm); }
+.shadow-wafren-md { box-shadow: var(--wafren-shadow-md); }
+.shadow-wafren-lg { box-shadow: var(--wafren-shadow-lg); }
+.shadow-wafren-xl { box-shadow: var(--wafren-shadow-xl); }
+
+/* Clases de utilidad para bordes redondeados */
+.rounded-wafren-sm { border-radius: var(--wafren-radius-sm); }
+.rounded-wafren-md { border-radius: var(--wafren-radius-md); }
+.rounded-wafren-lg { border-radius: var(--wafren-radius-lg); }
+.rounded-wafren-xl { border-radius: var(--wafren-radius-xl); }
+
+/* Clases de utilidad para transiciones */
+.transition-wafren-fast { transition: all var(--wafren-transition-fast); }
+.transition-wafren-normal { transition: all var(--wafren-transition-normal); }
+.transition-wafren-slow { transition: all var(--wafren-transition-slow); }

@@ -95,8 +95,8 @@ export default {
 
 <style scoped>
 .navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  color: #333;
   padding: 1rem 2rem;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   display: flex;
@@ -122,7 +122,7 @@ export default {
 }
 
 .navbar-item {
-  color: white;
+  color: #333;
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -134,12 +134,13 @@ export default {
 }
 
 .navbar-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.05);
   transform: translateY(-2px);
 }
 
 .navbar-item.active {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
   font-weight: 600;
 }
 
@@ -166,9 +167,9 @@ export default {
 }
 
 .logout-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #dee2e6;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   cursor: pointer;
@@ -180,7 +181,7 @@ export default {
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #e9ecef;
   transform: translateY(-2px);
 }
 
