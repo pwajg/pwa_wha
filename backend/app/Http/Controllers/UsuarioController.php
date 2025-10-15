@@ -136,7 +136,15 @@ class UsuarioController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $usuario = Usuario::with('sucursal')->find($id);
+        
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        }
+        
+        return response()->json($usuario, 200);
     }
 
     /**
@@ -144,7 +152,30 @@ class UsuarioController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $usuario = Usuario::find($id);
+        
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        }
+        
+        $validated = $request->validate([
+            'nombre' => 'sometimes|required|string|max:100',
+            'email' => 'sometimes|required|string|email|max:40|unique:usuarios,email,' . $id,
+            'password' => 'sometimes|string|min:6',
+            'rol' => 'sometimes|required|in:Administrador,Colaborador',
+            'idSucursal' => 'sometimes|required|exists:sucursales,id',
+        ]);
+        
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+        
+        $usuario->update($validated);
+        $usuario->load('sucursal');
+        
+        return response()->json($usuario, 200);
     }
 
     /**
@@ -152,6 +183,18 @@ class UsuarioController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $usuario = Usuario::find($id);
+        
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        }
+        
+        $usuario->delete();
+        
+        return response()->json([
+            'message' => 'Usuario eliminado correctamente'
+        ], 200);
     }
 }

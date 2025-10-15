@@ -134,6 +134,72 @@ class EncomiendaController extends Controller
     }
 
     /**
+     * Buscar encomienda por código (público)
+     */
+    public function buscarPorCodigo(string $codigo)
+    {
+        try {
+            $encomienda = Encomienda::with([
+                'clienteRemitente',
+                'clienteDestinatario',
+                'sucursalOrigen',
+                'sucursalDestino',
+                'estados' => function($query) {
+                    $query->orderBy('fechaCambio', 'desc');
+                }
+            ])->byCodigo($codigo)->first();
+
+            if (!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada',
+                    'encontrada' => false
+                ], 404);
+            }
+
+            // Obtener el estado más reciente
+            $estadoActual = $encomienda->estados->first();
+            $estadoDescripcion = $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado';
+
+            return response()->json([
+                'message' => 'Encomienda encontrada',
+                'encontrada' => true,
+                'data' => [
+                    'codigo' => $encomienda->codigo,
+                    'descripcion' => $encomienda->descripcion,
+                    'costo' => $encomienda->costo,
+                    'estadoPago' => $encomienda->estadoPago,
+                    'estadoActual' => $estadoDescripcion,
+                    'fechaUltimoEstado' => $estadoActual ? $estadoActual->fechaCambio : null,
+                    'clienteRemitente' => [
+                        'nombre' => $encomienda->clienteRemitente->nombre,
+                        'telefono' => $encomienda->clienteRemitente->telefono
+                    ],
+                    'clienteDestinatario' => [
+                        'nombre' => $encomienda->clienteDestinatario->nombre,
+                        'telefono' => $encomienda->clienteDestinatario->telefono
+                    ],
+                    'sucursalOrigen' => $encomienda->sucursalOrigen->nombre,
+                    'sucursalDestino' => $encomienda->sucursalDestino->nombre,
+                    'fechaCreacion' => $encomienda->created_at,
+                    'historialEstados' => $encomienda->estados->map(function($estado) {
+                        return [
+                            'estado' => $estado->descripcionEstado,
+                            'fecha' => $estado->fechaCambio
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al buscar encomienda',
+                'encontrada' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
@@ -227,8 +293,8 @@ class EncomiendaController extends Controller
      */
     private function crearOActualizarCliente($clienteData)
     {
-        // Buscar cliente existente por DNI
-        $clienteExistente = Cliente::byDni($clienteData['dni'])->first();
+        // Buscar cliente existente por número de documento
+        $clienteExistente = Cliente::byDni($clienteData['numeroDocumento'])->first();
 
         if ($clienteExistente) {
             // Actualizar datos del cliente existente
@@ -241,7 +307,7 @@ class EncomiendaController extends Controller
             // Crear nuevo cliente
             return Cliente::create([
                 'tipoCliente' => $clienteData['tipoCliente'],
-                'dni' => $clienteData['dni'],
+                'numeroDocumento' => $clienteData['numeroDocumento'],
                 'nombre' => $clienteData['nombre'],
                 'telefono' => $clienteData['telefono']
             ]);

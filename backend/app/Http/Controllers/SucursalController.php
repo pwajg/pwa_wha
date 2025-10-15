@@ -30,19 +30,15 @@ class SucursalController extends Controller
     {
         try {
             $request->validate([
-                'nombreSucursal' => 'required|string|max:255',
+                'nombre' => 'required|string|max:255',
                 'direccion' => 'required|string|max:255',
-                'telefono' => 'required|string|max:20',
-                'email' => 'nullable|email|max:255',
-                'responsable' => 'nullable|string|max:255'
+                'ciudad' => 'required|string|max:255',
+                'telefono' => 'required|string|max:9'
             ]);
 
             $sucursal = Sucursal::create($request->all());
 
-            return response()->json([
-                'message' => 'Sucursal creada exitosamente',
-                'data' => $sucursal
-            ], 201);
+            return response()->json($sucursal, 201);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al crear sucursal',
@@ -76,19 +72,15 @@ class SucursalController extends Controller
             $sucursal = Sucursal::findOrFail($id);
             
             $request->validate([
-                'nombreSucursal' => 'required|string|max:255',
-                'direccion' => 'required|string|max:255',
-                'telefono' => 'required|string|max:20',
-                'email' => 'nullable|email|max:255',
-                'responsable' => 'nullable|string|max:255'
+                'nombre' => 'sometimes|required|string|max:255',
+                'direccion' => 'sometimes|required|string|max:255',
+                'ciudad' => 'sometimes|required|string|max:255',
+                'telefono' => 'sometimes|required|string|max:9'
             ]);
 
             $sucursal->update($request->all());
 
-            return response()->json([
-                'message' => 'Sucursal actualizada exitosamente',
-                'data' => $sucursal
-            ]);
+            return response()->json($sucursal, 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al actualizar sucursal',
@@ -107,8 +99,8 @@ class SucursalController extends Controller
             $sucursal->delete();
 
             return response()->json([
-                'message' => 'Sucursal eliminada exitosamente'
-            ]);
+                'message' => 'Sucursal eliminada correctamente'
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al eliminar sucursal',

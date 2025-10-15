@@ -1,12 +1,13 @@
 import { createApp } from 'vue'
 import './style.css'
+import './assets/css/wafren-colors.css'
 import 'tailwindcss/tailwind.css'
 import App from './App.vue'
 import router from './router'
 import axios from 'axios'
 
 // Configurar axios con la URL base del backend
-axios.defaults.baseURL = 'http://localhost:8000/api'
+axios.defaults.baseURL = '/api'
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 axios.defaults.headers.common['Accept'] = 'application/json'
 

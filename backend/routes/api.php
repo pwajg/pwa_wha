@@ -17,6 +17,15 @@ Route::post('/logout', [UsuarioController::class, 'logout']);
 // Rutas públicas
 Route::get('/usuarios', [UsuarioController::class, 'index']);
 Route::post('/usuarios', [UsuarioController::class, 'store']);
+Route::get('/usuarios/{id}', [UsuarioController::class, 'show']);
+Route::put('/usuarios/{id}', [UsuarioController::class, 'update']);
+Route::delete('/usuarios/{id}', [UsuarioController::class, 'destroy']);
+
+// Rutas públicas de sucursales para el frontend
+Route::get('/sucursales', [SucursalController::class, 'index']);
+
+// Búsqueda pública de encomiendas por código
+Route::get('/encomiendas/buscar/{codigo}', [EncomiendaController::class, 'buscarPorCodigo']);
 
 // Rutas protegidas (requieren autenticación)
 Route::middleware('jwt.auth')->group(function () {
@@ -30,8 +39,7 @@ Route::middleware('jwt.auth')->group(function () {
     Route::put('/clientes/{id}', [ClienteController::class, 'update']);
     Route::delete('/clientes/{id}', [ClienteController::class, 'destroy']);
 
-    // Rutas de sucursales
-    Route::get('/sucursales', [SucursalController::class, 'index']);
+    // Rutas de sucursales (CRUD completo)
     Route::post('/sucursales', [SucursalController::class, 'store']);
     Route::get('/sucursales/{id}', [SucursalController::class, 'show']);
     Route::put('/sucursales/{id}', [SucursalController::class, 'update']);

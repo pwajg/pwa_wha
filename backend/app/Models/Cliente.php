@@ -15,12 +15,9 @@ class Cliente extends Model
 
     protected $fillable = [
         'tipoCliente',
-        'dni',
+        'numeroDocumento',
         'nombre',
-        'apellido',
-        'telefono',
-        'direccion',
-        'email'
+        'telefono'
     ];
 
     protected $casts = [
@@ -39,9 +36,9 @@ class Cliente extends Model
         return $this->hasMany(Encomienda::class, 'idClienteDestinatario', 'idCliente');
     }
 
-    // Scope para buscar por DNI
-    public function scopeByDni($query, $dni)
+    // Scope para buscar por número de documento
+    public function scopeByDni($query, $numeroDocumento)
     {
-        return $query->where('dni', $dni);
+        return $query->where('numeroDocumento', $numeroDocumento);
     }
 }
