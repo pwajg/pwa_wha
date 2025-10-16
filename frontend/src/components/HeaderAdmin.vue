@@ -18,7 +18,7 @@
         </button>
         
         <!-- Dropdown menu -->
-        <div v-show="showDropdown" class="dropdown-menu">
+        <div v-if="showDropdown" ref="dropdownMenu" class="dropdown-menu" :style="{ display: 'block' }">
           <div class="user-info">
             <div class="user-name">{{ userName }}</div>
             <div class="user-role">{{ userRole }}</div>
@@ -73,6 +73,16 @@ export default {
       console.log('Toggle dropdown clicked, current state:', this.showDropdown);
       this.showDropdown = !this.showDropdown;
       console.log('New state:', this.showDropdown);
+      
+      // Debug adicional
+      this.$nextTick(() => {
+        if (this.$refs.dropdownMenu) {
+          console.log('Dropdown element found:', this.$refs.dropdownMenu);
+          console.log('Dropdown styles:', window.getComputedStyle(this.$refs.dropdownMenu));
+        } else {
+          console.log('Dropdown element NOT found');
+        }
+      });
     },
     toggleSidebar() {
       this.$emit('toggle-sidebar');
@@ -99,13 +109,23 @@ export default {
     });
     
     // Cerrar dropdown al hacer click fuera
+    this.clickOutsideHandler = (e) => {
+      const profileDropdown = document.querySelector('.profile-dropdown');
+      if (profileDropdown && !profileDropdown.contains(e.target)) {
+        this.showDropdown = false;
+      }
+    };
+    
     setTimeout(() => {
-      document.addEventListener('click', (e) => {
-        if (!this.$el.contains(e.target)) {
-          this.showDropdown = false;
-        }
-      });
+      document.addEventListener('click', this.clickOutsideHandler);
     }, 100);
+  },
+  
+  beforeUnmount() {
+    // Limpiar event listener
+    if (this.clickOutsideHandler) {
+      document.removeEventListener('click', this.clickOutsideHandler);
+    }
   }
 }
 </script>
@@ -166,6 +186,7 @@ export default {
 /* Profile dropdown styles */
 .profile-dropdown {
   position: relative;
+  z-index: 1000;
 }
 
 .profile-btn {
@@ -200,18 +221,22 @@ export default {
 }
 
 .dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0.5rem;
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  min-width: 200px;
-  overflow: hidden;
-  animation: dropdownFadeIn 0.2s ease-out;
-  z-index: 1001;
-  border: 1px solid #e5e7eb;
+  position: absolute !important;
+  top: calc(100% + 0.5rem) !important;
+  right: 0 !important;
+  background: white !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  min-width: 200px !important;
+  overflow: visible !important;
+  z-index: 99999 !important;
+  border: 2px solid #dc2626 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+  display: block !important;
+  width: 200px !important;
+  height: auto !important;
 }
 
 @keyframes dropdownFadeIn {

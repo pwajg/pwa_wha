@@ -88,6 +88,30 @@ const router = createRouter({
     routes,
 });
 
+// Función para validar si un token JWT es válido
+function isValidToken(token) {
+    if (!token) return false;
+    
+    try {
+        // Decodificar el payload del JWT
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        
+        // Verificar si el token ha expirado
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < currentTime) {
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error validating token:', error);
+        return false;
+    }
+}
+
 // Guard de navegación para proteger rutas
 router.beforeEach((to, from, next) => {
     const token = localStorage.getItem('token');
@@ -95,8 +119,10 @@ router.beforeEach((to, from, next) => {
     
     // Verificar si la ruta requiere autenticación
     if (to.meta.requiresAuth) {
-        if (!token || !usuario) {
-            // No hay token, redirigir al login
+        if (!token || !usuario || !isValidToken(token)) {
+            // No hay token válido, limpiar localStorage y redirigir al login
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
             next('/login');
             return;
         }
@@ -119,8 +145,8 @@ router.beforeEach((to, from, next) => {
         
         // Usuario autenticado y con permisos, permitir acceso
         next();
-    } else if (to.path === '/login' && token && usuario) {
-        // Si ya está autenticado y va al login, redirigir según rol
+    } else if (to.path === '/login' && token && usuario && isValidToken(token)) {
+        // Si ya está autenticado con token válido y va al login, redirigir según rol
         try {
             const userData = JSON.parse(usuario);
             if (userData.rol === 'Administrador') {

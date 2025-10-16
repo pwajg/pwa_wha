@@ -22,8 +22,7 @@ return new class extends Migration
             //Claves foraneas
             $table->foreignId('idClienteRemitente')->constrained('clientes', 'idCliente');
             $table->foreignId('idClienteDestinatario')->constrained('clientes', 'idCliente');
-            $table->foreignId('idSucursalOrigen')->constrained('sucursales', 'id');
-            $table->foreignId('idSucursalDestino')->constrained('sucursales', 'id');
+            $table->foreignId('idFlete')->constrained('fletes', 'idFlete');
             $table->timestamps();
         });
     }

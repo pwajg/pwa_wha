@@ -5,8 +5,8 @@
     <header class="header">
       <div class="header-content">
         <span class="logo">WAFREN</span>
-        <button @click="$router.push('/login')" class="login-btn">
-          Iniciar Sesión
+        <button @click="handleLoginClick" class="login-btn">
+          {{ isAuthenticated ? 'Ir al Panel' : 'Iniciar Sesión' }}
         </button>
       </div>
     </header>
@@ -94,7 +94,6 @@
         </div>
       </div>
     </main>
-
     <!-- Footer completamente responsivo -->
     <footer class="footer">
       <div class="footer-content">
@@ -109,7 +108,7 @@
 <script>
 import axios from 'axios'
 
-  export default {
+export default {
   name: 'Inicio',
   data() {
     return {
@@ -119,7 +118,8 @@ import axios from 'axios'
       estadoEncomienda: '',
       buscando: false,
       datosEncomienda: null,
-      error: null
+      error: null,
+      isAuthenticated: false
     }
   },
   methods: {
@@ -170,9 +170,61 @@ import axios from 'axios'
       this.estadoEncomienda = '';
       this.datosEncomienda = null;
       this.error = null;
+    },
+
+    // Función para validar si un token JWT es válido
+    isValidToken(token) {
+      if (!token) return false;
+      
+      try {
+        // Decodificar el payload del JWT
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        
+        // Verificar si el token ha expirado
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < currentTime) {
+          return false;
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('Error validating token:', error);
+        return false;
+      }
+    },
+
+    // Verificar autenticación con validación de token
+    checkAuthentication() {
+      const token = localStorage.getItem('token');
+      const usuario = localStorage.getItem('usuario');
+      this.isAuthenticated = !!(token && usuario && this.isValidToken(token));
+    },
+
+    // Método para manejar el clic del botón de login
+    handleLoginClick() {
+      if (this.isAuthenticated) {
+        // Si ya está autenticado con token válido, ir directamente al panel según el rol
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        if (usuario && usuario.rol === 'Administrador') {
+          this.$router.push('/admin');
+        } else {
+          this.$router.push('/home');
+        }
+      } else {
+        // Si NO está autenticado o token inválido, ir al login para crear un nuevo token
+        this.$router.push('/login');
+      }
     }
+  },
+
+  mounted() {
+    // Verificar si el usuario está autenticado al cargar la página
+    this.checkAuthentication();
   }
-  }
+}
 </script>
 
 <style scoped> 
