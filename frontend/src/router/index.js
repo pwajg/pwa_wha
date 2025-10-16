@@ -5,6 +5,7 @@ import HomeWrapper from '../components/HomeWrapper.vue';
 import CrearEncomiendaPage from '../pages/CrearEncomiendaPage.vue';
 import HomeAdminPage from '../pages/Administrador/HomeAdminPage.vue';
 import FletesPage from '../pages/Administrador/FletesPage.vue';
+import FleteEncomiendasPage from '../pages/Administrador/FleteEncomiendasPage.vue';
 import UsuariosPage from '../pages/Administrador/UsuariosPage.vue';
 import SucursalesPage from '../pages/Administrador/SucursalesPage.vue';
 import ReportesPage from '../pages/Administrador/ReportesPage.vue';
@@ -48,6 +49,12 @@ const routes = [
         path: '/admin/fletes', 
         name: 'Fletes', 
         component: FletesPage, 
+        meta: { requiresAuth: true, requiresAdmin: true } 
+    },
+    { 
+        path: '/admin/fletes/:fleteId/encomiendas', 
+        name: 'FleteEncomiendas', 
+        component: FleteEncomiendasPage, 
         meta: { requiresAuth: true, requiresAdmin: true } 
     },
     { 

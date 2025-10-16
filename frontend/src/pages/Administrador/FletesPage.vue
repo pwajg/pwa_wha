@@ -1,16 +1,50 @@
 <template>
   <AdminLayout :key="$route.path">
     <div class="fletes-page">
-      <!-- Header con título -->
+      <!-- Header con título dinámico -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Fletes y Envíos</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+          Fletes de {{ fechaActual }}
+        </h1>
         <p class="text-gray-600">Administra los fletes y grupos de encomiendas</p>
       </div>
 
-      <!-- Barra de búsqueda y botón agregar -->
+      <!-- Controles de vista -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <!-- Buscador -->
-        <div class="flex-1 max-w-md">
+        <!-- Botones de alternancia de vista -->
+        <div class="flex items-center gap-2">
+          <button
+            @click="vistaActual = 'box'"
+            :class="[
+              'p-2 rounded-lg transition-colors duration-200',
+              vistaActual === 'box' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ]"
+            title="Vista de cajas"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </button>
+          <button
+            @click="vistaActual = 'tabla'"
+            :class="[
+              'p-2 rounded-lg transition-colors duration-200',
+              vistaActual === 'tabla' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ]"
+            title="Vista de tabla"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0V4a1 1 0 011-1h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Barra de búsqueda y filtros -->
+        <div class="flex flex-col sm:flex-row gap-4 flex-1 max-w-md">
           <div class="relative">
             <input
               v-model="searchTerm"
@@ -25,18 +59,20 @@
               </svg>
             </div>
           </div>
+          
+          <!-- Filtro por estado -->
+          <select
+            v-model="filtroEstado"
+            @change="filterFletes"
+            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Todos los estados</option>
+            <option value="En origen">En origen</option>
+            <option value="En tránsito">En tránsito</option>
+            <option value="En destino">En destino</option>
+            <option value="De vuelta">De vuelta</option>
+          </select>
         </div>
-
-        <!-- Botón agregar -->
-        <button
-          @click="showAddModal = true"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200"
-        >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          Crear Flete
-        </button>
       </div>
 
       <!-- Indicador de carga -->
@@ -45,66 +81,132 @@
         <p class="mt-2 text-gray-600">Cargando fletes...</p>
       </div>
 
-      <!-- Tabla de fletes -->
+      <!-- Vista Box (Grid de cajas) -->
+      <div v-else-if="vistaActual === 'box'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          v-for="flete in filteredFletes"
+          :key="flete.id"
+          @click="verEncomiendas(flete)"
+          class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
+        >
+          <!-- Header del card -->
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800">{{ flete.sucursalDestino?.nombre || 'Sin destino' }}</h3>
+              <p class="text-sm text-gray-500">{{ flete.codigo }}</p>
+            </div>
+            <span
+              class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+              :class="getEstadoClass(flete.estado)"
+            >
+              {{ flete.estado }}
+            </span>
+          </div>
+
+          <!-- Información del flete -->
+          <div class="space-y-2 mb-4">
+            <div class="flex items-center text-sm text-gray-600">
+              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span>{{ flete.sucursalOrigen?.nombre || 'Sin origen' }} → {{ flete.sucursalDestino?.nombre || 'Sin destino' }}</span>
+            </div>
+            
+            <div class="flex items-center text-sm text-gray-600">
+              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+              </svg>
+              <span>{{ flete.totalEncomiendas }} encomiendas</span>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <button
+                @click.stop="verEncomiendas(flete)"
+                class="text-blue-600 hover:text-blue-800 p-1 rounded"
+                title="Ver encomiendas"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+              <button
+                @click.stop="editFlete(flete)"
+                class="text-green-600 hover:text-green-800 p-1 rounded"
+                title="Editar flete"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </button>
+              <button
+                @click.stop="deleteFlete(flete.id)"
+                class="text-red-600 hover:text-red-800 p-1 rounded"
+                title="Eliminar flete"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+            <span class="text-xs text-gray-400">{{ formatDate(flete.created_at) }}</span>
+          </div>
+        </div>
+
+        <!-- Estado vacío para vista box -->
+        <div v-if="filteredFletes.length === 0" class="col-span-full text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No hay fletes</h3>
+          <p class="mt-1 text-sm text-gray-500">No se encontraron fletes con los criterios de búsqueda.</p>
+        </div>
+      </div>
+
+      <!-- Vista Tabla -->
       <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encomiendas</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encomiendas</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-for="flete in filteredFletes" :key="flete.id" class="hover:bg-gray-50">
-                <!-- ID -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ flete.id }}</td>
-                
                 <!-- Código -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  <input
-                    v-if="editingId === flete.id"
-                    v-model="editingFlete.codigo"
-                    type="text"
-                    class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <span v-else>{{ flete.codigo }}</span>
+                  {{ flete.codigo }}
                 </td>
                 
                 <!-- Origen -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <select
-                    v-if="editingId === flete.id"
-                    v-model="editingFlete.sucursalOrigen"
-                    class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Seleccionar origen</option>
-                    <option v-for="sucursal in sucursales" :key="sucursal.id" :value="sucursal.id">
-                      {{ sucursal.nombre }}
-                    </option>
-                  </select>
-                  <span v-else>{{ flete.sucursalOrigen?.nombre || 'N/A' }}</span>
+                  {{ flete.sucursalOrigen?.nombre || 'N/A' }}
                 </td>
                 
                 <!-- Destino -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <select
-                    v-if="editingId === flete.id"
-                    v-model="editingFlete.sucursalDestino"
-                    class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  {{ flete.sucursalDestino?.nombre || 'N/A' }}
+                </td>
+                
+                <!-- Estado -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                    :class="getEstadoClass(flete.estado)"
                   >
-                    <option value="">Seleccionar destino</option>
-                    <option v-for="sucursal in sucursales" :key="sucursal.id" :value="sucursal.id">
-                      {{ sucursal.nombre }}
-                    </option>
-                  </select>
-                  <span v-else>{{ flete.sucursalDestino?.nombre || 'N/A' }}</span>
+                    {{ flete.estado }}
+                  </span>
                 </td>
                 
                 <!-- Encomiendas -->
@@ -114,57 +216,18 @@
                   </span>
                 </td>
                 
-                <!-- Estado -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <select
-                    v-if="editingId === flete.id"
-                    v-model="editingFlete.estado"
-                    class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="Programado">Programado</option>
-                    <option value="En camino">En camino</option>
-                    <option value="En destino">En destino</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                  <span v-else class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                        :class="getEstadoClass(flete.estado)">
-                    {{ flete.estado }}
-                  </span>
-                </td>
-                
-                <!-- Fecha Creación -->
+                <!-- Fecha -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ formatDate(flete.created_at) }}
                 </td>
                 
                 <!-- Acciones -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div v-if="editingId === flete.id" class="flex items-center gap-2">
+                  <div class="flex items-center gap-2">
                     <button
-                      @click="saveFlete(flete.id)"
-                      class="text-green-600 hover:text-green-900 p-1 rounded"
-                      title="Guardar"
-                    >
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </button>
-                    <button
-                      @click="cancelEdit"
-                      class="text-gray-600 hover:text-gray-900 p-1 rounded"
-                      title="Cancelar"
-                    >
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <div v-else class="flex items-center gap-2">
-                    <button
-                      @click="verDetalles(flete)"
+                      @click="verEncomiendas(flete)"
                       class="text-blue-600 hover:text-blue-900 p-1 rounded"
-                      title="Ver detalles"
+                      title="Ver encomiendas"
                     >
                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -174,7 +237,7 @@
                     <button
                       @click="editFlete(flete)"
                       class="text-green-600 hover:text-green-900 p-1 rounded"
-                      title="Editar"
+                      title="Editar flete"
                     >
                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -183,7 +246,7 @@
                     <button
                       @click="deleteFlete(flete.id)"
                       class="text-red-600 hover:text-red-900 p-1 rounded"
-                      title="Eliminar"
+                      title="Eliminar flete"
                     >
                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -196,54 +259,41 @@
           </table>
         </div>
         
-        <!-- Estado vacío -->
+        <!-- Estado vacío para vista tabla -->
         <div v-if="filteredFletes.length === 0" class="text-center py-12">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
           </svg>
           <h3 class="mt-2 text-sm font-medium text-gray-900">No hay fletes</h3>
-          <p class="mt-1 text-sm text-gray-500">Comienza creando un nuevo flete.</p>
+          <p class="mt-1 text-sm text-gray-500">No se encontraron fletes con los criterios de búsqueda.</p>
         </div>
       </div>
 
-      <!-- Modal para crear flete -->
-      <div v-if="showAddModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <!-- Modal para editar flete -->
+      <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
           <div class="mt-3">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Crear Nuevo Flete</h3>
-            <form @submit.prevent="addFlete">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Editar Flete</h3>
+            <form @submit.prevent="saveFlete">
               <div class="space-y-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Código del Flete</label>
                   <input
-                    v-model="newFlete.codigo"
+                    v-model="editingFlete.codigo"
                     type="text"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Sucursal Origen</label>
-                  <select
-                    v-model="newFlete.sucursalOrigen"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Seleccionar origen</option>
-                    <option v-for="sucursal in sucursales" :key="sucursal.id" :value="sucursal.id">
-                      {{ sucursal.nombre }}
-                    </option>
-                  </select>
-                </div>
-                <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Sucursal Destino</label>
                   <select
-                    v-model="newFlete.sucursalDestino"
+                    v-model="editingFlete.sucursalDestino"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Seleccionar destino</option>
-                    <option v-for="sucursal in sucursales" :key="sucursal.id" :value="sucursal.id">
+                    <option v-for="sucursal in sucursalesDisponibles" :key="sucursal.id" :value="sucursal.id">
                       {{ sucursal.nombre }}
                     </option>
                   </select>
@@ -251,20 +301,20 @@
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
                   <select
-                    v-model="newFlete.estado"
+                    v-model="editingFlete.estado"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="Programado">Programado</option>
-                    <option value="En camino">En camino</option>
+                    <option value="En origen">En origen</option>
+                    <option value="En tránsito">En tránsito</option>
                     <option value="En destino">En destino</option>
-                    <option value="Completado">Completado</option>
+                    <option value="De vuelta">De vuelta</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
                   <textarea
-                    v-model="newFlete.descripcion"
+                    v-model="editingFlete.observaciones"
                     rows="3"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   ></textarea>
@@ -273,7 +323,7 @@
               <div class="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
-                  @click="showAddModal = false"
+                  @click="showEditModal = false"
                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
                 >
                   Cancelar
@@ -282,7 +332,7 @@
                   type="submit"
                   class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200"
                 >
-                  Crear Flete
+                  Guardar Cambios
                 </button>
               </div>
             </form>
@@ -290,89 +340,36 @@
         </div>
       </div>
 
-      <!-- Modal para ver detalles del flete -->
-      <div v-if="showDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+      <!-- Modal de confirmación para eliminar -->
+      <div v-if="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
           <div class="mt-3">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-lg font-medium text-gray-900">Detalles del Flete: {{ selectedFlete?.codigo }}</h3>
-              <button
-                @click="showDetailsModal = false"
-                class="text-gray-400 hover:text-gray-600"
-              >
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+              <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
             </div>
-            
-            <div v-if="selectedFlete" class="space-y-6">
-              <!-- Información general -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                  <h4 class="font-medium text-gray-800 mb-2">Información General</h4>
-                  <div class="space-y-2 text-sm">
-                    <div><span class="font-medium">Código:</span> {{ selectedFlete.codigo }}</div>
-                    <div><span class="font-medium">Estado:</span> 
-                      <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                            :class="getEstadoClass(selectedFlete.estado)">
-                        {{ selectedFlete.estado }}
-                      </span>
-                    </div>
-                    <div><span class="font-medium">Fecha Creación:</span> {{ formatDate(selectedFlete.created_at) }}</div>
-                  </div>
-                </div>
-                
-                <div class="bg-gray-50 p-4 rounded-lg">
-                  <h4 class="font-medium text-gray-800 mb-2">Ruta</h4>
-                  <div class="space-y-2 text-sm">
-                    <div><span class="font-medium">Origen:</span> {{ selectedFlete.sucursalOrigen?.nombre || 'N/A' }}</div>
-                    <div><span class="font-medium">Destino:</span> {{ selectedFlete.sucursalDestino?.nombre || 'N/A' }}</div>
-                  </div>
-                </div>
+            <div class="mt-3 text-center">
+              <h3 class="text-lg font-medium text-gray-900">Eliminar Flete</h3>
+              <div class="mt-2">
+                <p class="text-sm text-gray-500">
+                  ¿Estás seguro de que deseas eliminar este flete? Esta acción no se puede deshacer.
+                </p>
               </div>
-              
-              <!-- Encomiendas del flete -->
-              <div>
-                <h4 class="font-medium text-gray-800 mb-4">Encomiendas Incluidas</h4>
-                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody class="bg-white divide-y divide-gray-200">
-                        <tr v-for="encomienda in selectedFlete.encomiendas || []" :key="encomienda.id" class="hover:bg-gray-50">
-                          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ encomienda.codigo }}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ encomienda.cliente?.nombre || 'N/A' }}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                  :class="getEstadoClass(encomienda.estado)">
-                              {{ encomienda.estado }}
-                            </span>
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ encomienda.valor?.toLocaleString() || '0' }}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div v-if="!selectedFlete.encomiendas || selectedFlete.encomiendas.length === 0" class="text-center py-8">
-                    <p class="text-gray-500">No hay encomiendas asignadas a este flete.</p>
-                  </div>
-                </div>
-              </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+              <button
+                @click="showDeleteModal = false"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="confirmDelete"
+                class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
         </div>
@@ -395,20 +392,33 @@ export default {
       fletes: [],
       sucursales: [],
       searchTerm: '',
+      filtroEstado: '',
       filteredFletes: [],
-      editingId: null,
+      vistaActual: 'box', // 'box' o 'tabla'
+      showEditModal: false,
+      showDeleteModal: false,
       editingFlete: {},
-      showAddModal: false,
-      showDetailsModal: false,
-      selectedFlete: null,
-      newFlete: {
-        codigo: '',
-        sucursalOrigen: '',
-        sucursalDestino: '',
-        estado: 'Programado',
-        descripcion: ''
-      },
-      loading: false
+      fleteToDelete: null,
+      loading: false,
+      // Simular usuario en sesión (sucursal origen)
+      usuarioSesion: {
+        idSucursal: 1, // Sucursal Principal
+        nombre: 'Administrador'
+      }
+    }
+  },
+  computed: {
+    fechaActual() {
+      const hoy = new Date()
+      return hoy.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    },
+    sucursalesDisponibles() {
+      // Excluir la sucursal del usuario en sesión
+      return this.sucursales.filter(sucursal => sucursal.id !== this.usuarioSesion.idSucursal)
     }
   },
   async mounted() {
@@ -419,31 +429,46 @@ export default {
     async loadFletes() {
       try {
         this.loading = true
-        // Simular datos de fletes (backend pendiente)
+        // Simular datos de fletes basados en los seeders
         this.fletes = [
           {
             id: 1,
-            codigo: 'FLT-001',
+            codigo: 'FLT-251015-001',
             sucursalOrigen: { id: 1, nombre: 'Sucursal Principal' },
-            sucursalDestino: { id: 2, nombre: 'Sucursal Norte' },
-            estado: 'En camino',
-            totalEncomiendas: 5,
-            created_at: '2025-10-09',
+            sucursalDestino: { id: 2, nombre: 'Lima Centro' },
+            estado: 'En origen',
+            totalEncomiendas: 2,
+            observaciones: 'Flete programado para Lima',
+            created_at: '2025-10-15',
             encomiendas: [
-              { id: 1, codigo: 'ENC-001', cliente: { nombre: 'Juan Pérez' }, estado: 'En tránsito', valor: 15000 },
-              { id: 2, codigo: 'ENC-002', cliente: { nombre: 'María García' }, estado: 'En tránsito', valor: 12000 }
+              { id: 1, codigo: 'ENC-251008-001', cliente: { nombre: 'Juan Carlos Pérez García' }, estado: 'En origen', valor: 25.50 },
+              { id: 2, codigo: 'ENC-251008-004', cliente: { nombre: 'Carlos Alberto Mendoza Silva' }, estado: 'En origen', valor: 35.75 }
             ]
           },
           {
             id: 2,
-            codigo: 'FLT-002',
-            sucursalOrigen: { id: 2, nombre: 'Sucursal Norte' },
-            sucursalDestino: { id: 3, nombre: 'Sucursal Sur' },
-            estado: 'Completado',
-            totalEncomiendas: 3,
-            created_at: '2025-10-08',
+            codigo: 'FLT-251015-002',
+            sucursalOrigen: { id: 1, nombre: 'Sucursal Principal' },
+            sucursalDestino: { id: 3, nombre: 'Arequipa Centro' },
+            estado: 'En tránsito',
+            totalEncomiendas: 1,
+            observaciones: 'Flete en camino a Arequipa',
+            created_at: '2025-10-15',
             encomiendas: [
-              { id: 3, codigo: 'ENC-003', cliente: { nombre: 'Carlos López' }, estado: 'Entregada', valor: 18000 }
+              { id: 3, codigo: 'ENC-251008-002', cliente: { nombre: 'Comercial Los Andes S.A.C.' }, estado: 'En tránsito', valor: 45.00 }
+            ]
+          },
+          {
+            id: 3,
+            codigo: 'FLT-251015-003',
+            sucursalOrigen: { id: 1, nombre: 'Sucursal Principal' },
+            sucursalDestino: { id: 4, nombre: 'Cusco Centro' },
+            estado: 'En destino',
+            totalEncomiendas: 1,
+            observaciones: 'Flete llegó a Cusco',
+            created_at: '2025-10-15',
+            encomiendas: [
+              { id: 4, codigo: 'ENC-251008-003', cliente: { nombre: 'María Elena Rodríguez López' }, estado: 'En destino', valor: 15.00 }
             ]
           }
         ]
@@ -462,67 +487,87 @@ export default {
         this.sucursales = response.data
       } catch (error) {
         console.error('Error al cargar sucursales:', error)
-        // Datos de ejemplo
+        // Datos de ejemplo basados en los seeders
         this.sucursales = [
           { id: 1, nombre: 'Sucursal Principal' },
-          { id: 2, nombre: 'Sucursal Norte' },
-          { id: 3, nombre: 'Sucursal Sur' }
+          { id: 2, nombre: 'Lima Centro' },
+          { id: 3, nombre: 'Arequipa Centro' },
+          { id: 4, nombre: 'Cusco Centro' }
         ]
       }
     },
     
     filterFletes() {
-      if (!this.searchTerm) {
-        this.filteredFletes = [...this.fletes]
-        return
-      }
+      let filtered = [...this.fletes]
       
+      // Filtro por término de búsqueda
+      if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase()
-      this.filteredFletes = this.fletes.filter(flete => 
+        filtered = filtered.filter(flete => 
         flete.codigo.toLowerCase().includes(term) ||
         flete.sucursalOrigen?.nombre.toLowerCase().includes(term) ||
         flete.sucursalDestino?.nombre.toLowerCase().includes(term) ||
         flete.estado.toLowerCase().includes(term)
       )
+      }
+      
+      // Filtro por estado
+      if (this.filtroEstado) {
+        filtered = filtered.filter(flete => flete.estado === this.filtroEstado)
+      }
+      
+      this.filteredFletes = filtered
+    },
+    
+    verEncomiendas(flete) {
+      // Navegar a la vista de encomiendas del flete
+      this.$router.push({
+        name: 'FleteEncomiendas',
+        params: { fleteId: flete.id },
+        query: { 
+          codigo: flete.codigo,
+          destino: flete.sucursalDestino?.nombre || 'Sin destino'
+        }
+      })
     },
     
     editFlete(flete) {
-      this.editingId = flete.id
       this.editingFlete = {
+        id: flete.id,
         codigo: flete.codigo,
-        sucursalOrigen: flete.sucursalOrigen?.id || '',
         sucursalDestino: flete.sucursalDestino?.id || '',
-        estado: flete.estado
+        estado: flete.estado,
+        observaciones: flete.observaciones || ''
       }
+      this.showEditModal = true
     },
     
-    async saveFlete(id) {
+    async saveFlete() {
       try {
-        console.log('Guardando flete:', id, this.editingFlete)
+        console.log('Guardando flete:', this.editingFlete)
         // Aquí se haría la llamada a la API
         
         // Actualizar el flete en la lista
-        const index = this.fletes.findIndex(f => f.id === id)
+        const index = this.fletes.findIndex(f => f.id === this.editingFlete.id)
         if (index !== -1) {
-          const sucursalOrigen = this.sucursales.find(s => s.id == this.editingFlete.sucursalOrigen)
           const sucursalDestino = this.sucursales.find(s => s.id == this.editingFlete.sucursalDestino)
           
           this.fletes[index] = {
             ...this.fletes[index],
             codigo: this.editingFlete.codigo,
-            sucursalOrigen,
             sucursalDestino,
-            estado: this.editingFlete.estado
+            estado: this.editingFlete.estado,
+            observaciones: this.editingFlete.observaciones
           }
         }
         
         // Actualizar también en filteredFletes
-        const filteredIndex = this.filteredFletes.findIndex(f => f.id === id)
+        const filteredIndex = this.filteredFletes.findIndex(f => f.id === this.editingFlete.id)
         if (filteredIndex !== -1) {
           this.filteredFletes[filteredIndex] = this.fletes[index]
         }
         
-        this.editingId = null
+        this.showEditModal = false
         this.editingFlete = {}
         this.$toast?.success('Flete actualizado correctamente')
       } catch (error) {
@@ -531,24 +576,22 @@ export default {
       }
     },
     
-    cancelEdit() {
-      this.editingId = null
-      this.editingFlete = {}
+    deleteFlete(id) {
+      this.fleteToDelete = id
+      this.showDeleteModal = true
     },
     
-    async deleteFlete(id) {
-      if (!confirm('¿Estás seguro de que deseas eliminar este flete?')) {
-        return
-      }
-      
+    async confirmDelete() {
       try {
-        console.log('Eliminando flete:', id)
+        console.log('Eliminando flete:', this.fleteToDelete)
         // Aquí se haría la llamada a la API
         
         // Remover de la lista
-        this.fletes = this.fletes.filter(f => f.id !== id)
-        this.filteredFletes = this.filteredFletes.filter(f => f.id !== id)
+        this.fletes = this.fletes.filter(f => f.id !== this.fleteToDelete)
+        this.filteredFletes = this.filteredFletes.filter(f => f.id !== this.fleteToDelete)
         
+        this.showDeleteModal = false
+        this.fleteToDelete = null
         this.$toast?.success('Flete eliminado correctamente')
       } catch (error) {
         console.error('Error al eliminar flete:', error)
@@ -556,61 +599,12 @@ export default {
       }
     },
     
-    async addFlete() {
-      try {
-        console.log('Creando flete:', this.newFlete)
-        // Aquí se haría la llamada a la API
-        
-        const sucursalOrigen = this.sucursales.find(s => s.id == this.newFlete.sucursalOrigen)
-        const sucursalDestino = this.sucursales.find(s => s.id == this.newFlete.sucursalDestino)
-        
-        const newFlete = {
-          id: Date.now(), // ID temporal
-          codigo: this.newFlete.codigo,
-          sucursalOrigen,
-          sucursalDestino,
-          estado: this.newFlete.estado,
-          totalEncomiendas: 0,
-          created_at: new Date().toISOString().split('T')[0],
-          encomiendas: []
-        }
-        
-        this.fletes.push(newFlete)
-        this.filteredFletes.push(newFlete)
-        
-        this.showAddModal = false
-        this.newFlete = {
-          codigo: '',
-          sucursalOrigen: '',
-          sucursalDestino: '',
-          estado: 'Programado',
-          descripcion: ''
-        }
-        
-        this.$toast?.success('Flete creado correctamente')
-      } catch (error) {
-        console.error('Error al crear flete:', error)
-        this.$toast?.error('Error al crear flete')
-      }
-    },
-    
-    verDetalles(flete) {
-      this.selectedFlete = flete
-      this.showDetailsModal = true
-    },
-    
     getEstadoClass(estado) {
       const clases = {
-        'Programado': 'bg-gray-100 text-gray-800',
-        'En camino': 'bg-blue-100 text-blue-800',
-        'En destino': 'bg-yellow-100 text-yellow-800',
-        'Completado': 'bg-green-100 text-green-800',
-        'Cancelado': 'bg-red-100 text-red-800',
-        'Entregada': 'bg-green-100 text-green-800',
-        'En tránsito': 'bg-blue-100 text-blue-800',
         'En origen': 'bg-yellow-100 text-yellow-800',
-        'Retenida': 'bg-red-100 text-red-800',
-        'Devuelta': 'bg-gray-100 text-gray-800'
+        'En tránsito': 'bg-blue-100 text-blue-800',
+        'En destino': 'bg-green-100 text-green-800',
+        'De vuelta': 'bg-purple-100 text-purple-800'
       }
       return clases[estado] || 'bg-gray-100 text-gray-800'
     },
@@ -645,5 +639,14 @@ export default {
   table {
     min-width: 600px;
   }
+}
+
+/* Animaciones para las cards */
+.grid > div {
+  transition: transform 0.2s ease-in-out;
+}
+
+.grid > div:hover {
+  transform: translateY(-2px);
 }
 </style>
