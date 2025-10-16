@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('transportes', function (Blueprint $table) {
             $table->id('idTransporte');
             $table->string('placa');
-            $table->string('caracteristicas');
+            $table->string('descripcion');
+            $table->string('url');
             $table->timestamps();
         });
     }

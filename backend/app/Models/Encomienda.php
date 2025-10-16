@@ -42,16 +42,6 @@ class Encomienda extends Model
         return $this->belongsTo(Cliente::class, 'idClienteDestinatario', 'idCliente');
     }
 
-    public function sucursalOrigen()
-    {
-        return $this->belongsTo(Sucursal::class, 'idSucursalOrigen', 'id');
-    }
-
-    public function sucursalDestino()
-    {
-        return $this->belongsTo(Sucursal::class, 'idSucursalDestino', 'id');
-    }
-
     public function estados()
     {
         return $this->hasMany(EstadoEncomienda::class, 'idEncomienda', 'idEncomienda');

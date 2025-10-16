@@ -5,6 +5,7 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\EncomiendaController;
+use App\Http\Controllers\FleteController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'API funcionando']);
@@ -51,4 +52,15 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/encomiendas/{id}', [EncomiendaController::class, 'show']);
     Route::put('/encomiendas/{id}', [EncomiendaController::class, 'update']);
     Route::delete('/encomiendas/{id}', [EncomiendaController::class, 'destroy']);
+
+    // Rutas: Flete
+    Route::post('/fletes', [FleteController::class, 'store']);
+    Route::get('/fletes', [FleteController::class, 'index']);
+    Route::get('/fletes/{id}',[FleteController::class,'show']);
+    Route::put('/fletes/{id}',[FleteController::class,'update']);
+    Route::delete('/fletes/{id}',[FleteController::class,'destroy']);
+    
+    // Rutas adicionales para fletes
+    Route::post('/fletes/{id}/asignar-encomiendas', [FleteController::class, 'asignarEncomiendas']);
+    Route::post('/fletes/{id}/enviar', [FleteController::class, 'enviarFlete']);
 });
