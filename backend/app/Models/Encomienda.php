@@ -15,14 +15,13 @@ class Encomienda extends Model
 
     protected $fillable = [
         'codigo',
-        'descripcion',
         'costo',
+        'descripcion',
         'observaciones',
         'estadoPago',
         'idClienteRemitente',
         'idClienteDestinatario',
-        'idSucursalOrigen',
-        'idSucursalDestino'
+        'idFlete'
     ];
 
     protected $casts = [
@@ -32,29 +31,19 @@ class Encomienda extends Model
     ];
 
     // Relaciones
-    public function clienteRemitente()
+    public function ClienteRemitente()
     {
         return $this->belongsTo(Cliente::class, 'idClienteRemitente', 'idCliente');
     }
-
-    public function clienteDestinatario()
+    public function ClienteDestinatario() 
     {
         return $this->belongsTo(Cliente::class, 'idClienteDestinatario', 'idCliente');
     }
-
-    public function estados()
+    public function Flete()
     {
+        return $this->belongsTo(Flete::class, 'idFlete', 'idFlete');
+    }
+    public function estadoEncomiendas() {
         return $this->hasMany(EstadoEncomienda::class, 'idEncomienda', 'idEncomienda');
-    }
-
-    public function pagos()
-    {
-        return $this->hasMany(Pago::class, 'idEncomienda', 'idEncomienda');
-    }
-
-    // Scope para buscar por código
-    public function scopeByCodigo($query, $codigo)
-    {
-        return $query->where('codigo', $codigo);
     }
 }

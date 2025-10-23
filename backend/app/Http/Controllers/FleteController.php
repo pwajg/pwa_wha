@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Flete;
 use App\Models\Transporte;
 use App\Models\Sucursal;
+use App\Models\Usuario;
+use App\Models\EstadoFlete;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -26,17 +28,28 @@ class FleteController extends Controller
     public function store(Request $request)
     {
         try {
-            // Obtener usuario autenticado
-            $usuario = auth()->user();
-            if (!$usuario) {
+            $usuarioId = $request->user_id;
+            if (!$usuarioId) {
                 return response()->json([
                     'message' => 'Usuario no autenticado'
                 ], 401);
             }
 
+            $usuario = Usuario::find($usuarioId);
+            if (!$usuario) {
+                return response()->json([
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            // Obtener la sucursal del usuario autenticado
+            $sucursalOrigen = null;
+            if ($usuario->idSucursal) {
+                $sucursalOrigen = Sucursal::find($usuario->idSucursal);
+            }
+
             // Obtener todas las sucursales de destino
             $sucursalesDestino = Sucursal::all();
-            $sucursalOrigen = Sucursal::find($usuario->idSucursal);
             
             if (!$sucursalOrigen) {
                 return response()->json([
@@ -46,6 +59,20 @@ class FleteController extends Controller
 
             $fletesCreados = [];
             $fletesNoCreados = [];
+            $fechaHoy = Carbon::today();
+
+            // Obtener IDs de fletes que están en estado "Registrado" (sin importar el día)
+            $fletesRegistrados = EstadoFlete::where('descripcionEstado', 'Registrado')
+                ->whereHas('Flete', function($query) use ($sucursalOrigen) {
+                    $query->where('idSucursalOrigen', $sucursalOrigen->id);
+                })
+                ->pluck('idFlete')
+                ->toArray();
+
+            // Obtener sucursales de destino que ya tienen fletes registrados
+            $sucursalesConFletesRegistrados = Flete::whereIn('idFlete', $fletesRegistrados)
+                ->pluck('idSucursalDestino')
+                ->toArray();
 
             DB::beginTransaction();
 
@@ -56,19 +83,17 @@ class FleteController extends Controller
                         continue;
                     }
 
-                    // Verificar si ya existe un flete registrado (no enviado) para esta ruta hoy
-                    $fleteExistente = Flete::where('idSucursalOrigen', $sucursalOrigen->id)
-                        ->where('idSucursalDestino', $sucursalDestino->id)
-                        ->whereDate('created_at', Carbon::today())
-                        ->whereDoesntHave('estadoFletes', function($query) {
-                            $query->where('descripcionEstado', 'Enviado');
-                        })
-                        ->first();
+                    // Verificar si esta sucursal ya tiene un flete registrado hoy
+                    if (in_array($sucursalDestino->id, $sucursalesConFletesRegistrados)) {
+                        $fleteExistente = Flete::where('idSucursalOrigen', $sucursalOrigen->id)
+                            ->where('idSucursalDestino', $sucursalDestino->id)
+                            ->whereIn('idFlete', $fletesRegistrados)
+                            ->first();
 
-                    if ($fleteExistente) {
                         $fletesNoCreados[] = [
                             'sucursal' => $sucursalDestino->nombre,
-                            'razon' => 'Ya existe un flete registrado para esta ruta hoy'
+                            'razon' => 'Ya existe un flete registrado para esta ruta hoy',
+                            'flete_existente' => $fleteExistente ? $fleteExistente->codigo : 'N/A'
                         ];
                         continue;
                     }
@@ -214,6 +239,213 @@ class FleteController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al enviar flete: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar estado de un flete específico
+     */
+    public function actualizarEstado(Request $request, $fleteId)
+    {
+        try {
+            $validated = $request->validate([
+                'descripcionEstado' => 'required|string|max:255',
+                'observaciones' => 'nullable|string|max:500'
+            ]);
+
+            $flete = Flete::find($fleteId);
+            if (!$flete) {
+                return response()->json(['message' => 'Flete no encontrado'], 404);
+            }
+
+            // Obtener el estado actual del flete
+            $estadoActual = $flete->estadoFletes()->latest()->first();
+            
+            // Verificar que no se esté duplicando el mismo estado
+            if ($estadoActual && $estadoActual->descripcionEstado === $validated['descripcionEstado']) {
+                return response()->json([
+                    'message' => 'El flete ya se encuentra en el estado especificado'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            try {
+                // Crear nuevo estado
+                $nuevoEstado = $this->crearEstadoFlete(
+                    $flete->idFlete, 
+                    $validated['descripcionEstado'], 
+                    $validated['observaciones'] ?? 'Estado actualizado'
+                );
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Estado del flete actualizado exitosamente',
+                    'flete' => $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']),
+                    'estado_anterior' => $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado previo',
+                    'estado_nuevo' => $validated['descripcionEstado']
+                ], 200);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar estado del flete: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener historial de estados de un flete
+     */
+    public function obtenerHistorialEstados($fleteId)
+    {
+        try {
+            $flete = Flete::find($fleteId);
+            if (!$flete) {
+                return response()->json(['message' => 'Flete no encontrado'], 404);
+            }
+
+            $historial = $flete->estadoFletes()
+                ->orderBy('fechaCambio', 'desc')
+                ->get();
+
+            return response()->json([
+                'flete' => $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']),
+                'historial_estados' => $historial
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener historial de estados: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Crear fletes automáticamente para todas las sucursales (endpoint manual)
+     */
+    public function crearFletesAutomaticos(Request $request)
+    {
+        try {
+            // Obtener usuario autenticado desde el middleware JWT
+            $usuarioId = $request->user_id;
+            if (!$usuarioId) {
+                return response()->json([
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+
+            // Obtener el usuario completo desde la base de datos
+            $usuario = Usuario::find($usuarioId);
+            if (!$usuario) {
+                return response()->json([
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            // Obtener la sucursal del usuario autenticado
+            $sucursalOrigen = null;
+            if ($usuario->idSucursal) {
+                $sucursalOrigen = Sucursal::find($usuario->idSucursal);
+            }
+            
+            if (!$sucursalOrigen) {
+                return response()->json([
+                    'message' => 'Usuario no tiene sucursal asignada'
+                ], 400);
+            }
+
+            // Obtener todas las sucursales de destino
+            $sucursalesDestino = Sucursal::where('id', '!=', $sucursalOrigen->id)->get();
+            
+            if ($sucursalesDestino->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay sucursales de destino disponibles'
+                ], 400);
+            }
+
+            $fletesCreados = [];
+            $fletesNoCreados = [];
+            $fechaHoy = Carbon::today();
+
+            // Obtener IDs de fletes que están en estado "Registrado" (sin importar el día)
+            $fletesRegistrados = EstadoFlete::where('descripcionEstado', 'Registrado')
+                ->whereHas('Flete', function($query) use ($sucursalOrigen) {
+                    $query->where('idSucursalOrigen', $sucursalOrigen->id);
+                })
+                ->pluck('idFlete')
+                ->toArray();
+
+            // Obtener sucursales de destino que ya tienen fletes registrados
+            $sucursalesConFletesRegistrados = Flete::whereIn('idFlete', $fletesRegistrados)
+                ->pluck('idSucursalDestino')
+                ->toArray();
+
+            DB::beginTransaction();
+
+            try {
+                foreach ($sucursalesDestino as $sucursalDestino) {
+                    // Verificar si esta sucursal ya tiene un flete registrado hoy
+                    if (in_array($sucursalDestino->id, $sucursalesConFletesRegistrados)) {
+                        $fleteExistente = Flete::where('idSucursalOrigen', $sucursalOrigen->id)
+                            ->where('idSucursalDestino', $sucursalDestino->id)
+                            ->whereIn('idFlete', $fletesRegistrados)
+                            ->first();
+
+                        $fletesNoCreados[] = [
+                            'sucursal' => $sucursalDestino->nombre,
+                            'razon' => 'Ya existe un flete registrado para esta ruta hoy',
+                            'flete_existente' => $fleteExistente ? $fleteExistente->codigo : 'N/A'
+                        ];
+                        continue;
+                    }
+
+                    // Crear el flete
+                    $codigo = $this->generarCodigoFlete();
+                    $flete = Flete::create([
+                        'codigo' => $codigo,
+                        'observaciones' => 'Flete automático creado para ' . $sucursalDestino->nombre . ' - ' . $fechaHoy->format('d/m/Y'),
+                        'idTransporte' => null, // Se asignará cuando se envíe
+                        'idSucursalOrigen' => $sucursalOrigen->id,
+                        'idSucursalDestino' => $sucursalDestino->id
+                    ]);
+
+                    // Crear estado inicial "Registrado"
+                    $this->crearEstadoFlete($flete->idFlete, 'Registrado', 'Flete creado automáticamente');
+
+                    $fletesCreados[] = [
+                        'flete' => $flete,
+                        'sucursal_destino' => $sucursalDestino->nombre,
+                        'codigo' => $flete->codigo
+                    ];
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Proceso de creación automática de fletes completado',
+                    'fecha' => $fechaHoy->format('d/m/Y'),
+                    'sucursal_origen' => $sucursalOrigen->nombre,
+                    'fletes_creados' => count($fletesCreados),
+                    'fletes_no_creados' => count($fletesNoCreados),
+                    'detalle_creados' => $fletesCreados,
+                    'detalle_no_creados' => $fletesNoCreados
+                ], 201);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al crear fletes automáticamente: ' . $e->getMessage()
             ], 500);
         }
     }

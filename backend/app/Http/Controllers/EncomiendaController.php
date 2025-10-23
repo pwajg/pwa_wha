@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\EstadoEncomienda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class EncomiendaController extends Controller
 {
@@ -17,15 +18,11 @@ class EncomiendaController extends Controller
     {
         try {
             $encomiendas = Encomienda::with([
-                'clienteRemitente',
-                'clienteDestinatario',
-                'sucursalOrigen',
-                'sucursalDestino',
-                'estados' => function($query) {
-                    $query->orderBy('fechaCambio', 'desc');
-                }
+                'ClienteRemitente',
+                'ClienteDestinatario',
+                'Flete',
+                'estadoEncomiendas'
             ])->get();
-
             return response()->json($encomiendas);
         } catch (\Exception $e) {
             return response()->json([
@@ -35,74 +32,65 @@ class EncomiendaController extends Controller
         }
     }
 
+    private function generarCodigoEncomienda(){
+        $fecha = Carbon::now()->format('Ymd');
+        $ultimaEncomienda = Encomienda::whereDate('created_at', Carbon::today())
+            ->orderBy('idEncomienda', 'desc')
+            ->first();
+        if($ultimaEncomienda){
+            $ultimoNumero = (int) substr($ultimaEncomienda->codigo,-3);
+            $nuevoNumero = $ultimoNumero + 1;
+        } else {
+            $nuevoNumero = 1;
+        }
+        return 'ENC-' . $fecha . '-' . str_pad($nuevoNumero, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function crearEstadoEncomienda($encomiendaId, $estado, $observaciones = ''){
+        return DB::table('estado_encomiendas')->insert([
+            'idEncomienda' => $encomiendaId,
+            'descripcionEstado' => $estado,
+            'fechaCambio' => Carbon::now(),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now()
+        ]);
+    }
+    //Crear encomienda
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
         try {
-            DB::beginTransaction();
-
-            // Validar datos básicos de la encomienda
-            $request->validate([
-                'codigo' => 'required|string|unique:encomiendas,codigo',
-                'descripcion' => 'required|string',
+            // Validar datos
+            $validated =$request->validate([
+                'descripcion' => 'required|string|max:500',
+                'estadoPago' => 'required|in:Pendiente,Parcial,Pagado',
                 'costo' => 'required|numeric|min:0',
-                'observaciones' => 'nullable|string',
-                'clienteRemitente' => 'required|array',
-                'clienteDestinatario' => 'required|array',
-                'idSucursalOrigen' => 'required|exists:sucursales,idSucursal',
-                'idSucursalDestino' => 'required|exists:sucursales,idSucursal'
+                'observaciones' => 'nullable|string|max:500',
+                'idClienteRemitente' => 'required|exists:clientes,idCliente',
+                'idClienteDestinatario' => 'required|exists:clientes,idCliente',
+                'idFlete' => 'required|exists:fletes,idFlete'
             ]);
-
-            // Validar datos de clientes
-            $this->validarCliente($request->clienteRemitente, 'Cliente Remitente');
-            $this->validarCliente($request->clienteDestinatario, 'Cliente Destinatario');
-
-            // Crear o buscar cliente remitente
-            $clienteRemitente = $this->crearOActualizarCliente($request->clienteRemitente);
-
-            // Crear o buscar cliente destinatario
-            $clienteDestinatario = $this->crearOActualizarCliente($request->clienteDestinatario);
-
-            // Crear la encomienda
-            $encomienda = Encomienda::create([
-                'codigo' => $request->codigo,
-                'descripcion' => $request->descripcion,
-                'costo' => $request->costo,
-                'observaciones' => $request->observaciones,
-                'estadoPago' => 'Pendiente',
-                'idClienteRemitente' => $clienteRemitente->idCliente,
-                'idClienteDestinatario' => $clienteDestinatario->idCliente,
-                'idSucursalOrigen' => $request->idSucursalOrigen,
-                'idSucursalDestino' => $request->idSucursalDestino
-            ]);
-
-            // Crear el estado inicial
-            EstadoEncomienda::create([
-                'descripcionEstado' => 'Registrado',
-                'fechaCambio' => now(),
-                'idEncomienda' => $encomienda->idEncomienda
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Encomienda creada exitosamente',
-                'data' => $encomienda->load([
-                    'clienteRemitente',
-                    'clienteDestinatario',
-                    'sucursalOrigen',
-                    'sucursalDestino',
-                    'estados'
-                ])
-            ], 201);
-
+            $codigo = $this->generarCodigoEncomienda();
+            $validated['codigo'] = $codigo;
+            DB::beginTransaction();
+            try {
+                $encomienda = Encomienda::create($validated);
+                $this->crearEstadoEncomienda($encomienda->idEncomienda, 'Registrado', 'Encomienda creada');
+                DB::commit();
+                $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
+                return response()->json([
+                    'message' => 'Encomienda creada exitosamente',
+                    'data' => $encomienda
+                ], 201);
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
         } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json([
-                'message' => 'Error al crear encomienda',
-                'error' => $e->getMessage()
+                'message' => 'Error al crear encomienda: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -114,16 +102,10 @@ class EncomiendaController extends Controller
     {
         try {
             $encomienda = Encomienda::with([
-                'clienteRemitente',
-                'clienteDestinatario',
-                'sucursalOrigen',
-                'sucursalDestino',
-                'estados' => function($query) {
-                    $query->orderBy('fechaCambio', 'desc');
-                },
-                'pagos'
+                'ClienteRemitente',
+                'ClienteDestinatario',
+                'Flete'
             ])->findOrFail($id);
-
             return response()->json($encomienda);
         } catch (\Exception $e) {
             return response()->json([
@@ -139,56 +121,29 @@ class EncomiendaController extends Controller
     public function buscarPorCodigo(string $codigo)
     {
         try {
-            $encomienda = Encomienda::with([
-                'clienteRemitente',
-                'clienteDestinatario',
-                'sucursalOrigen',
-                'sucursalDestino',
-                'estados' => function($query) {
+            $encomienda = Encomienda::where('codigo', $codigo)->with([
+                'ClienteRemitente',
+                'ClienteDestinatario', 
+                'Flete',
+                'estadoEncomiendas' => function($query) {
                     $query->orderBy('fechaCambio', 'desc');
                 }
-            ])->byCodigo($codigo)->first();
-
+            ])
+            ->first();
             if (!$encomienda) {
                 return response()->json([
                     'message' => 'Encomienda no encontrada',
-                    'encontrada' => false
+                    'codigo_buscado' => $codigo
                 ], 404);
             }
-
             // Obtener el estado más reciente
-            $estadoActual = $encomienda->estados->first();
-            $estadoDescripcion = $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado';
-
+            $estadoActual = $encomienda->estadoEncomiendas->first();
+            
             return response()->json([
                 'message' => 'Encomienda encontrada',
-                'encontrada' => true,
-                'data' => [
-                    'codigo' => $encomienda->codigo,
-                    'descripcion' => $encomienda->descripcion,
-                    'costo' => $encomienda->costo,
-                    'estadoPago' => $encomienda->estadoPago,
-                    'estadoActual' => $estadoDescripcion,
-                    'fechaUltimoEstado' => $estadoActual ? $estadoActual->fechaCambio : null,
-                    'clienteRemitente' => [
-                        'nombre' => $encomienda->clienteRemitente->nombre,
-                        'telefono' => $encomienda->clienteRemitente->telefono
-                    ],
-                    'clienteDestinatario' => [
-                        'nombre' => $encomienda->clienteDestinatario->nombre,
-                        'telefono' => $encomienda->clienteDestinatario->telefono
-                    ],
-                    'sucursalOrigen' => $encomienda->sucursalOrigen->nombre,
-                    'sucursalDestino' => $encomienda->sucursalDestino->nombre,
-                    'fechaCreacion' => $encomienda->created_at,
-                    'historialEstados' => $encomienda->estados->map(function($estado) {
-                        return [
-                            'estado' => $estado->descripcionEstado,
-                            'fecha' => $estado->fechaCambio
-                        ];
-                    })
-                ]
-            ]);
+                'encomienda' => $encomienda,
+                'estadoActual' => $estadoActual,
+            ],200);
 
         } catch (\Exception $e) {
             return response()->json([

@@ -29,18 +29,14 @@ class ClienteController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
-                'tipoCliente' => 'required|string|in:Persona Natural,Empresa,Extranjero',
-                'dni' => 'required|string|unique:clientes,dni',
+            //Validar datos
+            $validated = $request->validate([
                 'nombre' => 'required|string|max:255',
-                'apellido' => 'nullable|string|max:255',
+                'numeroDocumento' => 'required|string|unique:clientes,numeroDocumento',
                 'telefono' => 'required|string|max:20',
-                'direccion' => 'nullable|string|max:255',
-                'email' => 'nullable|email|max:255'
+                'tipoCliente' => 'required|in:PersonaNatural,Empresa,Extranjero'
             ]);
-
-            $cliente = Cliente::create($request->all());
-
+            $cliente = Cliente::create($validated);
             return response()->json([
                 'message' => 'Cliente creado exitosamente',
                 'data' => $cliente

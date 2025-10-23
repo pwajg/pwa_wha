@@ -25,7 +25,12 @@ class JwtAuth
         
         if (!$payload) {
             return response()->json([
-                'message' => 'Token inválido o expirado'
+                'message' => 'Token inválido o expirado',
+                'debug' => [
+                    'token_received' => $token,
+                    'token_parts' => explode('.', $token),
+                    'app_key_exists' => !empty(config('app.key'))
+                ]
             ], 401);
         }
         
