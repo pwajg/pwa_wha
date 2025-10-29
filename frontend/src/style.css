@@ -66,6 +66,27 @@ button:focus-visible {
   text-align: center;
 }
 
+/* Utilidad global para unificar altura de botones medianos (coherente con header) */
+.btn-md-height {
+  height: 2.5rem; /* desktop/header */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .btn-md-height {
+    height: 2rem; /* header móvil pequeño */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .btn-md-height {
+    height: 3rem; /* header tablet grande */
+  }
+}
+
 /* Configuración global para modo claro */
 :root {
   color: #213547;

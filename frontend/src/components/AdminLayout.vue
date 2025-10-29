@@ -55,11 +55,12 @@ export default {
 .admin-layout {
   min-height: 100vh;
   background-color: #f8fafc;
+  padding-top: 4rem; /* Espacio para el header fijo de 4rem */
 }
 
 /* Contenido principal */
 .main-content {
-  margin-top: 4rem;
+  margin-top: 0; /* Ya no necesita margin-top porque el layout tiene padding-top */
   padding: 2rem 1rem;
   transition: all 0.3s ease;
   margin-left: 0;
@@ -67,8 +68,12 @@ export default {
 
 /* Desktop: sidebar expandido */
 @media (min-width: 1024px) {
+  .admin-layout {
+    padding-top: 4rem; /* Espacio para el header de 4rem */
+  }
+  
   .main-content {
-    margin-top: 0;
+    margin-top: 0; /* Ya no necesita margin-top porque el layout tiene padding-top */
     padding: 2rem;
     margin-left: 250px; /* Sidebar expandido */
   }
@@ -87,29 +92,45 @@ export default {
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
+  .admin-layout {
+    padding-top: 3rem; /* Espacio para el header en móviles pequeños */
+  }
+  
   .main-content {
-    margin-top: 3.5rem;
+    margin-top: 0;
     padding: 1rem 0.75rem;
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
+  .admin-layout {
+    padding-top: 4rem; /* Espacio para el header */
+  }
+  
   .main-content {
-    margin-top: 4rem;
+    margin-top: 0;
     padding: 1.5rem 1rem;
   }
 }
 
 @media (min-width: 769px) and (max-width: 1023px) {
+  .admin-layout {
+    padding-top: 5rem; /* Espacio para el header en tablets grandes */
+  }
+  
   .main-content {
-    margin-top: 5rem;
+    margin-top: 0;
     padding: 2rem 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
+  .admin-layout {
+    padding-top: 4rem; /* Espacio para el header de 4rem */
+  }
+  
   .main-content {
-    margin-top: 0;
+    margin-top: 0; /* Ya no necesita margin-top porque el layout tiene padding-top */
     padding: 2rem;
     margin-left: 250px;
   }

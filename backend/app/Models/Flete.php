@@ -33,4 +33,8 @@ class Flete extends Model
     public function estadoFletes(){
         return $this->hasMany(EstadoFlete::class, 'idFlete', 'idFlete');
     }
+    
+    public function Encomiendas(){
+        return $this->hasMany(Encomienda::class, 'idFlete', 'idFlete');
+    }
 }

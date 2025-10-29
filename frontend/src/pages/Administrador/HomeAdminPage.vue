@@ -16,7 +16,7 @@
       
       <div class="function-card">
         <div class="card-icon">🚚</div>
-        <h3>Fletes y Envíos</h3>
+        <h3>Fletes y Encomiendas</h3>
         <p>Gestión completa de servicios de transporte</p>
         <router-link to="/admin/fletes" class="card-link">Acceder</router-link>
       </div>
