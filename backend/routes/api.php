@@ -26,9 +26,6 @@ Route::middleware('jwt.auth')->get('/test-auth', function (Request $request) {
 Route::post('/login', [UsuarioController::class, 'login']); // Funciona
 Route::post('/logout', [UsuarioController::class, 'logout']); // Funciona
 
-// Rutas públicas
-Route::get('/usuarios', [UsuarioController::class, 'index']);
-Route::post('/usuarios', [UsuarioController::class, 'store']);
 Route::get('/usuarios/{id}', [UsuarioController::class, 'show']);
 Route::put('/usuarios/{id}', [UsuarioController::class, 'update']);
 Route::delete('/usuarios/{id}', [UsuarioController::class, 'destroy']);
@@ -36,17 +33,18 @@ Route::delete('/usuarios/{id}', [UsuarioController::class, 'destroy']);
 // Rutas públicas de sucursales para el frontend
 Route::get('/sucursales', [SucursalController::class, 'index']);
 
-// Búsqueda pública de encomiendas por código
-Route::get('/encomiendas/buscar/{codigo}', [EncomiendaController::class, 'buscarPorCodigo']); //Funciona
-
 // Rutas protegidas (requieren autenticación)
 Route::middleware('jwt.auth')->group(function () {
     Route::get('/me', [UsuarioController::class, 'me']); // Obtener información del usuario autenticado
     
+    // Rutas de usuarios
+    Route::get('/usuarios', [UsuarioController::class, 'index']); // Funciona
+    Route::post('/usuarios', [UsuarioController::class, 'store']); // Funciona
+
     // Rutas de clientes
-    Route::get('/clientes', [ClienteController::class, 'index']);
+    Route::get('/clientes', [ClienteController::class, 'index']); // Funciona
     Route::post('/clientes', [ClienteController::class, 'store']); //Funciona
-    Route::get('/clientes/buscar/{dni}', [ClienteController::class, 'buscarPorDni']);
+    Route::get('/clientes/buscar/{documento}', [ClienteController::class, 'buscarPorDocumento']); // Funciona
     Route::get('/clientes/{id}', [ClienteController::class, 'show']);
     Route::put('/clientes/{id}', [ClienteController::class, 'update']);
     Route::delete('/clientes/{id}', [ClienteController::class, 'destroy']);
@@ -60,21 +58,25 @@ Route::middleware('jwt.auth')->group(function () {
     // Rutas de encomiendas
     Route::get('/encomiendas', [EncomiendaController::class, 'index']); //Funciona
     Route::post('/encomiendas', [EncomiendaController::class, 'store']); //Funciona
-    Route::get('/encomiendas/{id}', [EncomiendaController::class, 'show']);
-    Route::put('/encomiendas/{id}', [EncomiendaController::class, 'update']);
+    Route::get('/encomiendas/{id}', [EncomiendaController::class, 'show']); //Funciona
+    Route::put('/encomiendas/{id}', [EncomiendaController::class, 'update']); //Funciona | Agrega observaciones
     Route::delete('/encomiendas/{id}', [EncomiendaController::class, 'destroy']);
+    // Búsqueda pública de encomiendas por código
+    Route::get('/encomiendas/buscar/{codigo}', [EncomiendaController::class, 'buscarPorCodigo']); //Funciona
 
     // Rutas: Flete
     Route::post('/fletes', [FleteController::class, 'store']); //funciona
-    Route::get('/fletes', [FleteController::class, 'index']);
-    Route::get('/fletes/{id}',[FleteController::class,'show']);
-    Route::put('/fletes/{id}',[FleteController::class,'update']);
-    Route::delete('/fletes/{id}',[FleteController::class,'destroy']);
+    Route::get('/fletes', [FleteController::class, 'index']); // Funciona
+    Route::get('/fletes/{id}',[FleteController::class,'show']); // Funciona
+    Route::put('/fletes/{id}',[FleteController::class,'update']); // Funciona | Cambia observaciones
+    Route::delete('/fletes/{id}',[FleteController::class,'destroy']); // Funciona
     
     // Rutas adicionales para fletes
-    Route::post('/fletes/{id}/asignar-encomiendas', [FleteController::class, 'asignarEncomiendas']);
-    Route::post('/fletes/{id}/enviar', [FleteController::class, 'enviarFlete']);
-    Route::put('/fletes/{id}/actualizar-estado', [FleteController::class, 'actualizarEstado']);
-    Route::get('/fletes/{id}/historial-estados', [FleteController::class, 'obtenerHistorialEstados']);
+    Route::post('/fletes/{id}/enviar', [FleteController::class, 'enviarFlete']); // Funciona | Envia automaticamente las encomiendas asignadas
+    Route::post('/fletes/{id}/reprogramar', [FleteController::class, 'reprogramarFlete']); // Funciona
+    Route::put('/fletes/{id}/cambiar-transporte', [FleteController::class, 'cambiarTransporte']); // Funciona
+    Route::post('/fletes/{id}/en-destino', [FleteController::class, 'fleteEnDestino']); // Funciona
+    Route::get('/fletes/{id}/encomiendas', [FleteController::class,'encomiendasAsignadas']);
+    //Route::get('/fletes/{id}/historial-estados', [FleteController::class, 'obtenerHistorialEstados']);
     Route::post('/fletes/crear-automaticos', [FleteController::class, 'crearFletesAutomaticos']); //Crea fletes automaticamente
 });

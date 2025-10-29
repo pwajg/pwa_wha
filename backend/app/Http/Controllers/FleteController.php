@@ -22,335 +22,43 @@ class FleteController extends Controller
     public function index(Request $request)
     {
         try {
-            // Primero, obtener el conteo total de fletes en la BD para debugging
-            $totalFletesEnBD = Flete::count();
-            \Log::info('Total fletes en BD (sin relaciones): ' . $totalFletesEnBD);
-            
-            // Construir query base - cargar relaciones sin fallar si no existen
-            try {
-                $query = Flete::with([
-                    'SucursalOrigen:id,nombre',
-                    'SucursalDestino:id,nombre',
-                    'Transporte:idTransporte,placa,marca',
-                    'estadoFletes' => function($query) {
-                        $query->orderBy('fechaCambio', 'desc');
-                    },
-                    'Encomiendas' => function($query) {
-                        $query->select('idEncomienda', 'codigo', 'idFlete');
-                    }
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('Error al cargar relaciones: ' . $e->getMessage());
-                // Si falla el with(), intentar sin relaciones
-                $query = Flete::query();
-            }
-
-            // Filtros opcionales por fecha
-            if ($request->has('anio') && $request->anio) {
-                $query->whereNotNull('created_at')->whereYear('created_at', $request->anio);
-            }
-
-            if ($request->has('mes') && $request->mes) {
-                $query->whereNotNull('created_at')->whereMonth('created_at', $request->mes);
-            }
-
-            if ($request->has('dia') && $request->dia) {
-                $query->whereNotNull('created_at')->whereDay('created_at', $request->dia);
-            }
-
-            // Ordenar por idFlete para asegurar un ordenamiento consistente
-            // El ordenamiento por created_at se puede hacer después si es necesario
-            $query->orderBy('idFlete', 'desc');
-
-            // Obtener todos los fletes
-            try {
-                $fletes = $query->get();
-            } catch (\Exception $e) {
-                \Log::error('Error obteniendo fletes: ' . $e->getMessage());
-                // Si falla, obtener sin relaciones complejas
-                $fletes = Flete::orderBy('idFlete', 'desc')->get();
-            }
-            
-            // Ordenar la colección en memoria si es necesario (solo si hay muchos fletes)
-            // Por ahora, mantener el orden del query
-
-            // Log para debugging
-            \Log::info('Fletes obtenidos con relaciones: ' . $fletes->count());
-            
-            // Si no se obtuvieron fletes pero hay en la BD, intentar sin filtros de fecha
-            if ($fletes->isEmpty() && $totalFletesEnBD > 0) {
-                \Log::warning('No se obtuvieron fletes con el query, intentando sin filtros de fecha...');
-                $fletes = Flete::with([
-                    'SucursalOrigen:id,nombre',
-                    'SucursalDestino:id,nombre',
-                    'Transporte:idTransporte,placa,marca',
-                    'estadoFletes' => function($query) {
-                        $query->orderBy('fechaCambio', 'desc');
-                    },
-                    'Encomiendas' => function($query) {
-                        $query->select('idEncomienda', 'codigo', 'idFlete');
-                    }
-                ])
-                ->orderBy('idFlete', 'desc')
-                ->get();
-                \Log::info('Fletes obtenidos sin filtros de fecha: ' . $fletes->count());
-            }
-
-            // Formatear los datos para el frontend
-            $estadoFiltro = $request->has('estado') && $request->estado ? $request->estado : null;
-            
-            $fletesFormateados = $fletes->map(function($flete) {
-                try {
-                    // Obtener el estado actual (último estado registrado)
-                    $estadoActual = null;
-                    if ($flete->relationLoaded('estadoFletes')) {
-                        $estadoActual = $flete->estadoFletes->first();
-                    } else {
-                        // Cargar si no se cargó antes
-                        $estadoActual = $flete->estadoFletes()->orderBy('fechaCambio', 'desc')->first();
-                    }
-                    return [
-                        'flete' => $flete,
-                        'estadoActual' => $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado'
-                    ];
-                } catch (\Exception $e) {
-                    \Log::error('Error procesando flete ' . $flete->idFlete . ': ' . $e->getMessage());
-                    return [
-                        'flete' => $flete,
-                        'estadoActual' => 'Sin estado'
-                    ];
-                }
-            })
-            ->filter(function($item) use ($estadoFiltro) {
-                // Filtrar por estado si se especificó
-                if ($estadoFiltro) {
-                    return $item['estadoActual'] === $estadoFiltro;
-                }
-                return true;
-            })
-            ->map(function($item) {
-                try {
-                    $flete = $item['flete'];
-                    $estadoString = $item['estadoActual'];
-                    
-                    // Obtener el objeto estadoActual para la información completa
-                    $estadoActualObj = null;
-                    try {
-                        if ($flete->relationLoaded('estadoFletes')) {
-                            $estadoActualObj = $flete->estadoFletes->first();
-                        } else {
-                            $estadoActualObj = $flete->estadoFletes()->orderBy('fechaCambio', 'desc')->first();
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Error obteniendo estado del flete ' . $flete->idFlete);
-                    }
-                    
-                    // Contar encomiendas asociadas
-                    $totalEncomiendas = 0;
-                    try {
-                        if ($flete->relationLoaded('Encomiendas')) {
-                            $totalEncomiendas = $flete->Encomiendas->count();
-                        } else {
-                            $totalEncomiendas = $flete->Encomiendas()->count();
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Error contando encomiendas del flete ' . $flete->idFlete);
-                    }
-                    
-                    // Obtener sucursales de forma segura
-                    $sucursalOrigen = null;
-                    try {
-                        if ($flete->relationLoaded('SucursalOrigen') && $flete->SucursalOrigen) {
-                            $sucursalOrigen = [
-                                'id' => $flete->SucursalOrigen->id,
-                                'nombre' => $flete->SucursalOrigen->nombre
-                            ];
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Error obteniendo SucursalOrigen del flete ' . $flete->idFlete);
-                    }
-                    
-                    $sucursalDestino = null;
-                    try {
-                        if ($flete->relationLoaded('SucursalDestino') && $flete->SucursalDestino) {
-                            $sucursalDestino = [
-                                'id' => $flete->SucursalDestino->id,
-                                'nombre' => $flete->SucursalDestino->nombre
-                            ];
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Error obteniendo SucursalDestino del flete ' . $flete->idFlete);
-                    }
-                    
-                    $transporte = null;
-                    try {
-                        if ($flete->relationLoaded('Transporte') && $flete->Transporte) {
-                            $transporte = [
-                                'id' => $flete->Transporte->idTransporte,
-                                'placa' => $flete->Transporte->placa,
-                                'marca' => $flete->Transporte->marca
-                            ];
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Error obteniendo Transporte del flete ' . $flete->idFlete);
-                    }
-                    
-                    // Formatear fechas de forma segura
-                    $createdAt = null;
-                    if ($flete->created_at) {
-                        if (is_string($flete->created_at)) {
-                            try {
-                                $createdAt = \Carbon\Carbon::parse($flete->created_at)->format('Y-m-d');
-                            } catch (\Exception $e) {
-                                $createdAt = $flete->created_at;
-                            }
-                        } else {
-                            $createdAt = $flete->created_at->format('Y-m-d');
-                        }
-                    }
-                    
-                    $updatedAt = null;
-                    if ($flete->updated_at) {
-                        if (is_string($flete->updated_at)) {
-                            try {
-                                $updatedAt = \Carbon\Carbon::parse($flete->updated_at)->format('Y-m-d H:i:s');
-                            } catch (\Exception $e) {
-                                $updatedAt = $flete->updated_at;
-                            }
-                        } else {
-                            $updatedAt = $flete->updated_at->format('Y-m-d H:i:s');
-                        }
-                    }
-                    
-                    // Formatear fechaCambio del estado de forma segura
-                    $fechaCambioEstado = null;
-                    if ($estadoActualObj && $estadoActualObj->fechaCambio) {
-                        if (is_string($estadoActualObj->fechaCambio)) {
-                            try {
-                                $fechaCambioEstado = \Carbon\Carbon::parse($estadoActualObj->fechaCambio)->format('Y-m-d H:i:s');
-                            } catch (\Exception $e) {
-                                $fechaCambioEstado = $estadoActualObj->fechaCambio;
-                            }
-                        } else {
-                            $fechaCambioEstado = $estadoActualObj->fechaCambio->format('Y-m-d H:i:s');
-                        }
-                    }
-                    
-                    return [
-                        'id' => $flete->idFlete,
-                        'codigo' => $flete->codigo ?? '',
-                        'sucursalOrigen' => $sucursalOrigen,
-                        'sucursalDestino' => $sucursalDestino,
-                        'estado' => $estadoString,
-                        'totalEncomiendas' => $totalEncomiendas,
-                        'observaciones' => $flete->observaciones ?? '',
-                        'transporte' => $transporte,
-                        'created_at' => $createdAt,
-                        'updated_at' => $updatedAt,
-                        // Información adicional del estado
-                        'estadoInfo' => $estadoActualObj ? [
-                            'descripcionEstado' => $estadoActualObj->descripcionEstado,
-                            'fechaCambio' => $fechaCambioEstado
-                        ] : null
-                    ];
-                } catch (\Exception $e) {
-                    \Log::error('Error formateando flete ' . ($item['flete']->idFlete ?? 'desconocido') . ': ' . $e->getMessage());
-                    // Retornar estructura mínima si hay error
-                    return [
-                        'id' => $item['flete']->idFlete ?? 0,
-                        'codigo' => $item['flete']->codigo ?? 'Error',
-                        'sucursalOrigen' => null,
-                        'sucursalDestino' => null,
-                        'estado' => 'Error',
-                        'totalEncomiendas' => 0,
-                        'observaciones' => '',
-                        'transporte' => null,
-                        'created_at' => null,
-                        'updated_at' => null,
-                        'estadoInfo' => null
-                    ];
-                }
-            })
-            ->filter(function($item) {
-                // Filtrar items con errores críticos
-                return $item['id'] > 0 && $item['codigo'] !== 'Error';
+            $fletes = Flete::with([
+                'SucursalOrigen',
+                'SucursalDestino',
+                'Transporte',
+                'estadoFletes'
+            ])->get();
+            $fletesEstado = $fletes->map(function($flete){
+                $estadoActual = $flete->estadoFletes()->orderBy('fechaCambio','desc')->first();
+                return [
+                    'idFlete' => $flete->idFlete,
+                    'codigo' => $flete->codigo,
+                    'observaciones' => $flete->observaciones,
+                    'idTransporte' => $flete->idTransporte,
+                    'idSucursalOrigen' => $flete->idSucursalOrigen,
+                    'idSucursalDestino' => $flete->idSucursalDestino,
+                    'created_at' => $flete->created_at,
+                    'updated_at' => $flete->updated_at,
+                    'SucursalOrigen' => $flete->SucursalOrigen,
+                    'SucursalDestino' => $flete->SucursalDestino,
+                    'Transporte' => $flete->Transporte,
+                    'estado_actual' => $estadoActual ? [
+                        'idEstadoFlete' => $estadoActual->idEstadoFlete,
+                        'descripcionEstado' => $estadoActual->descripcionEstado,
+                        'fechaCambio' => $estadoActual->fechaCambio
+                    ] : null,
+                    'historial_estados' => $flete->estadoFletes
+                ];
             });
-
-            \Log::info('Fletes formateados: ' . $fletesFormateados->count());
-
             return response()->json([
-                'message' => 'Fletes obtenidos exitosamente',
-                'data' => $fletesFormateados->values(), // Usar values() para reiniciar índices
-                'total' => $fletesFormateados->count()
-            ], 200);
-
+                'message' => 'Fletes obtenidos exitosamente.',
+                'fletes' => $fletesEstado,
+            ]);
         } catch (\Exception $e) {
-            \Log::error('Error al obtener fletes: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            // Intentar devolver fletes básicos sin relaciones si hay un error
-            try {
-                $fletesBasicos = Flete::select('idFlete', 'codigo', 'observaciones', 'idSucursalOrigen', 'idSucursalDestino', 'created_at', 'updated_at')
-                    ->orderBy('idFlete', 'desc')
-                    ->get()
-                    ->map(function($flete) {
-                        // Formatear fechas de forma segura
-                        $createdAt = null;
-                        if ($flete->created_at) {
-                            if (is_string($flete->created_at)) {
-                                try {
-                                    $createdAt = \Carbon\Carbon::parse($flete->created_at)->format('Y-m-d');
-                                } catch (\Exception $e) {
-                                    $createdAt = $flete->created_at;
-                                }
-                            } else {
-                                $createdAt = $flete->created_at->format('Y-m-d');
-                            }
-                        }
-                        
-                        $updatedAt = null;
-                        if ($flete->updated_at) {
-                            if (is_string($flete->updated_at)) {
-                                try {
-                                    $updatedAt = \Carbon\Carbon::parse($flete->updated_at)->format('Y-m-d H:i:s');
-                                } catch (\Exception $e) {
-                                    $updatedAt = $flete->updated_at;
-                                }
-                            } else {
-                                $updatedAt = $flete->updated_at->format('Y-m-d H:i:s');
-                            }
-                        }
-                        
-                        return [
-                            'id' => $flete->idFlete,
-                            'codigo' => $flete->codigo ?? '',
-                            'sucursalOrigen' => null,
-                            'sucursalDestino' => null,
-                            'estado' => 'Sin estado',
-                            'totalEncomiendas' => 0,
-                            'observaciones' => $flete->observaciones ?? '',
-                            'transporte' => null,
-                            'created_at' => $createdAt,
-                            'updated_at' => $updatedAt,
-                            'estadoInfo' => null
-                        ];
-                    });
-                
-                return response()->json([
-                    'message' => 'Fletes obtenidos (modo básico debido a errores en relaciones)',
-                    'data' => $fletesBasicos,
-                    'total' => $fletesBasicos->count(),
-                    'warning' => 'Algunos datos pueden estar incompletos debido a relaciones faltantes'
-                ], 200);
-            } catch (\Exception $e2) {
-                // Si incluso esto falla, devolver error
-                return response()->json([
-                    'message' => 'Error al obtener fletes: ' . $e->getMessage(),
-                    'error' => config('app.debug') ? $e->getTraceAsString() : null,
-                    'data' => [],
-                    'total' => 0
-                ], 500);
-            }
+            return response()->json([
+                'message' => 'Error al obtener Fletes.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -525,6 +233,16 @@ class FleteController extends Controller
         }
     }
 
+    private function crearEstadoEncomienda(int $encomiendaId, string $estado, string $obs = ''){
+        return \DB::table('estado_encomiendas')->insert([
+            'idEncomienda' => $encomiendaId,
+            'descripcionEstado' => $estado,
+            'fechaCambio' => Carbon::now(),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now()
+        ]);
+    }
+
     /**
      * Enviar flete (asignar transporte y cambiar estado)
      */
@@ -538,10 +256,21 @@ class FleteController extends Controller
             $flete = Flete::find($fleteId);
             if (!$flete) {
                 return response()->json(['message' => 'Flete no encontrado'], 404);
-            }
+            };
 
+            $transporteEnUso = Flete::where('idTransporte', $validated['idTransporte'])
+                ->whereHas('estadoFletes',function($query){
+                    $query->where('descripcionEstado','Enviado')
+                        ->whereRaw('fechaCambio = (SELECT MAX(fechaCambio) FROM estado_fletes WHERE idFlete = fletes.idFlete)');    
+                })
+                ->exists();
+            if($transporteEnUso){
+                return response()->json([
+                    'message' => 'El transporte ya está en uso'
+                ], 400);
+            }
             // Verificar que el flete esté en estado "Registrado"
-            $estadoActual = $flete->estadoFletes()->latest()->first();
+            $estadoActual = $flete->estadoFletes()->orderBy('fechaCambio','desc')->first();
             if (!$estadoActual || $estadoActual->descripcionEstado !== 'Registrado') {
                 return response()->json([
                     'message' => 'Solo se pueden enviar fletes en estado "Registrado"'
@@ -556,7 +285,20 @@ class FleteController extends Controller
 
                 // Cambiar estado a "Enviado"
                 $this->crearEstadoFlete($flete->idFlete, 'Enviado', 'Flete enviado con transporte asignado');
-
+                $encomiendaIds = \DB::table('encomiendas')
+                    ->where('idFlete',$flete->idFlete)
+                    ->pluck('idEncomienda');
+                if($encomiendaIds->isNotEmpty()) {
+                    $now = now();
+                    $rows = $encomiendaIds->map(fn($id) => [
+                        'idEncomienda' => $id,
+                        'descripcionEstado' => 'Enviado',
+                        'fechaCambio' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now
+                    ])->all();
+                    \DB::table('estado_encomiendas')->insert($rows);
+                }
                 DB::commit();
 
                 return response()->json([
@@ -579,56 +321,50 @@ class FleteController extends Controller
     /**
      * Actualizar estado de un flete específico
      */
-    public function actualizarEstado(Request $request, $fleteId)
+    public function fleteEnDestino(Request $request, $fleteId)
     {
         try {
             $validated = $request->validate([
-                'descripcionEstado' => 'required|string|max:255',
-                'observaciones' => 'nullable|string|max:500'
+                'observaciones' => 'nullable|string|max:500',
             ]);
-
             $flete = Flete::find($fleteId);
-            if (!$flete) {
-                return response()->json(['message' => 'Flete no encontrado'], 404);
-            }
-
-            // Obtener el estado actual del flete
-            $estadoActual = $flete->estadoFletes()->latest()->first();
-            
-            // Verificar que no se esté duplicando el mismo estado
-            if ($estadoActual && $estadoActual->descripcionEstado === $validated['descripcionEstado']) {
+            if(!$flete) {
                 return response()->json([
-                    'message' => 'El flete ya se encuentra en el estado especificado'
+                    'message' => 'Flete no encontrado.',
+                    'id_buscado' => $fleteId
+                ], 404);
+            }
+            $estadoActual = $flete->estadoFletes()
+                ->orderBy('fechaCambio', 'desc')
+                ->orderBy('idEstadoFlete','desc')
+                ->first();
+            $descripcionActual = $estadoActual ? trim($estadoActual->descripcionEstado) : null;
+            if(!$estadoActual || !in_array($descripcionActual,['Enviado','Reprogramado'])) {
+                return response()->json([
+                    'message' => 'Solo se pueden actualizar fletes en estado "Enviado" o "Reprogramado".',
+                    'estado_actual' => $estadoActual
                 ], 400);
             }
-
             DB::beginTransaction();
-
             try {
-                // Crear nuevo estado
-                $nuevoEstado = $this->crearEstadoFlete(
-                    $flete->idFlete, 
-                    $validated['descripcionEstado'], 
-                    $validated['observaciones'] ?? 'Estado actualizado'
+                $this->crearEstadoFlete(
+                    $flete->idFlete,
+                    'EnDestino',
+                    $validated['observaciones'] ?? 'Flete en destino'
                 );
-
                 DB::commit();
-
                 return response()->json([
-                    'message' => 'Estado del flete actualizado exitosamente',
+                    'message' => 'Flete actualizado exitosamente.',
                     'flete' => $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']),
-                    'estado_anterior' => $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado previo',
-                    'estado_nuevo' => $validated['descripcionEstado']
-                ], 200);
-
+                ],200);
             } catch (\Exception $e) {
                 DB::rollback();
                 throw $e;
             }
-
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al actualizar estado del flete: ' . $e->getMessage()
+                'message' => 'Error al actualizar flete.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -743,7 +479,7 @@ class FleteController extends Controller
                     $codigo = $this->generarCodigoFlete();
                     $flete = Flete::create([
                         'codigo' => $codigo,
-                        'observaciones' => 'Flete automático creado para ' . $sucursalDestino->nombre . ' - ' . $fechaHoy->format('d/m/Y'),
+                        'observaciones' => '',
                         'idTransporte' => null, // Se asignará cuando se envíe
                         'idSucursalOrigen' => $sucursalOrigen->id,
                         'idSucursalDestino' => $sucursalDestino->id
@@ -822,15 +558,188 @@ class FleteController extends Controller
      */
     public function show(string $id)
     {
-        //
+        try {
+            $flete = Flete::where('idFlete', $id)->with([
+                'SucursalOrigen',
+                'SucursalDestino',
+                'Transporte',
+            ])->first();
+            if(!$flete) {
+                return response()->json([
+                    'message' => 'Flete no encontrado.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            $estados = EstadoFlete::where('idFlete',$id)->orderBy('fechaCambio','desc')->get();
+            $estadoActual = $estados->first();
+            return response()->json([
+                'message' => 'Flete encontrado exitosamente.',
+                'flete' => $flete,
+                'estado_actual' => $estadoActual ? [
+                    'idEstadoFlete' => $estadoActual->idEstadoFlete,
+                    'descripcionEstado' => $estadoActual->descripcionEstado,
+                    'fechaCambio' => $estadoActual->fechaCambio,
+                ] : null,
+                'historial_estados' => $estados->map(function($estado) {return [
+                    'idEstadoFlete' => $estado->idEstadoFlete,
+                    'descripcionEstado' => $estado->descripcionEstado,
+                    'fechaCambio' => $estado->fechaCambio,
+                ]; })
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener flete.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+    public function reprogramarFlete(Request $request, $id) {
+        try {
+            $validated = $request->validate([
+                'observaciones' => 'nullable|string|max:500',
+            ]);
+            $flete = Flete::where('idFlete', $id)->first();
+            if(!$flete) {
+                return response()->json([
+                    'message' => 'Flete no encontrado.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            DB::beginTransaction();
+            try {
+                $this->crearEstadoFlete(
+                    $flete->idFlete,
+                    'Reprogramado',
+                    $validated['observaciones'] ?? 'Flete reprogramado'
+                );
+                DB::commit();
+                $estadoReprogramado = EstadoFlete::where('idFlete',$flete->idFlete)
+                    ->where('descripcionEstado','Reprogramado')
+                    ->orderBy('fechaCambio', 'desc')
+                    ->first();
+                $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
+                return response()->json([
+                    'message' => 'Flete reprogramado exitosamente.',
+                    'flete' => $flete,
+                    'estado_reprogramado' => $estadoReprogramado,
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al reprogramar flete.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function cambiarTransporte(Request $request, $id){
+        try {
+            $validated = $request->validate([
+                'idTransporte' => 'required|exists:transportes,idTransporte',
+                'observaciones' => 'nullable|string|max:500',
+            ]);
+            $flete = Flete::where('idFlete',$id)->first();
+            if(!$flete) {
+                return response()->json([
+                    'message' => 'Flete no encontrado.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            $nuevoTransporte = Transporte::find($validated['idTransporte']);
+            if(!$nuevoTransporte) {
+                return response()->json([
+                    'message' => 'Transporte no encontrado.',
+                ], 404);
+            }
+            // Verificar que el transporte no esté en uso por otro flete cuyo estado más reciente sea "Enviado"
+            // Usamos una subconsulta para obtener el último estado por flete y filtramos por "Enviado"
+            $latestEstadoSub = \DB::table('estado_fletes as ef_max')
+                ->select('ef_max.idFlete', \DB::raw('MAX(ef_max.fechaCambio) as max_fecha'))
+                ->groupBy('ef_max.idFlete');
 
+            $transporteEnUso = \DB::table('fletes as f')
+                ->joinSub($latestEstadoSub, 'm', function($join) {
+                    $join->on('m.idFlete', '=', 'f.idFlete');
+                })
+                ->join('estado_fletes as ef', function($join) {
+                    $join->on('ef.idFlete', '=', 'f.idFlete')
+                        ->on('ef.fechaCambio', '=', 'm.max_fecha');
+                })
+                ->where('f.idTransporte', $validated['idTransporte'])
+                ->where('f.idFlete', '!=', $flete->idFlete)
+                ->where('ef.descripcionEstado', 'Enviado')
+                ->exists();
+
+            if ($transporteEnUso) {
+                return response()->json([
+                    'message' => 'El transporte ya está en uso por otro flete.'
+                ], 400);
+            }
+            DB::beginTransaction();
+            try {
+                $transporteAnterior = $flete->idTransporte ? Transporte::find($flete->idTransporte) : null;
+                $flete->update([
+                    'idTransporte' => $validated['idTransporte']
+                ]);
+                DB::commit();
+                $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
+                return response()->json([
+                    'message' => 'Transporte cambiado exitosamente.',
+                    'flete' => $flete,
+                    'transporte_anterior' => $transporteAnterior ? [
+                        'idTransporte' => $transporteAnterior->idTransporte,
+                        'placa' => $transporteAnterior->placa
+                    ] : null,
+                    'transporte_nuevo' => [
+                        'idTransporte' => $nuevoTransporte->idTransporte,
+                        'placa' => $nuevoTransporte->placa,
+                    ]
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al cambiar transporte.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
     {
-        //
+        try {
+            $validated = $request->validate([
+                'observaciones' => 'nullable|string|max:500'
+            ]);
+            $flete = Flete::find($id);
+            if(!$flete) {
+                return response()->json([
+                    'message' => 'Flete no encontrado.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            if(isset($validated['observaciones'])) {
+                $flete->update([
+                    'observaciones' => $validated['observaciones']
+                ]);
+            }
+            $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
+            return response()->json([
+                'message' => 'Flete actualizado exitosamente.',
+                'flete' => $flete,
+            ],200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar flete.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -838,6 +747,32 @@ class FleteController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            $flete = Flete::find($id);
+            if(!$flete) {
+                return response()->json([
+                    'message' => 'Flete no encontrado.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            DB::beginTransaction();
+            try {
+                EstadoFlete::where('idFlete',$flete->idFlete)->delete();
+                $flete->delete();
+                DB::commit();
+                return response()->json([
+                    'message' => 'Flete eliminado exitosamente.',
+                    'codigo' => $flete->codigo,
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al eliminar flete.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

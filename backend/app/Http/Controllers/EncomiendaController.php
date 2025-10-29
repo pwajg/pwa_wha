@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Encomienda;
 use App\Models\Cliente;
+use App\Models\Flete;
 use App\Models\EstadoEncomienda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,10 +69,15 @@ class EncomiendaController extends Controller
                 'estadoPago' => 'required|in:Pendiente,Parcial,Pagado',
                 'costo' => 'required|numeric|min:0',
                 'observaciones' => 'nullable|string|max:500',
-                'idClienteRemitente' => 'required|exists:clientes,idCliente',
+                'idClienteRemitente' => 'required|exists:clientes,idCliente|different:idClienteDestinatario',
                 'idClienteDestinatario' => 'required|exists:clientes,idCliente',
                 'idFlete' => 'required|exists:fletes,idFlete'
             ]);
+            if ($validated['idClienteRemitente'] === $validated['idClienteDestinatario']) {
+                return response()->json([
+                    'message' => 'El remitente y el destinatario deben ser diferentes'
+                ], 422);
+            }
             $codigo = $this->generarCodigoEncomienda();
             $validated['codigo'] = $codigo;
             DB::beginTransaction();
@@ -101,17 +107,38 @@ class EncomiendaController extends Controller
     public function show(string $id)
     {
         try {
-            $encomienda = Encomienda::with([
+            $encomienda = Encomienda::where('idEncomienda',$id)->with([
                 'ClienteRemitente',
                 'ClienteDestinatario',
                 'Flete'
-            ])->findOrFail($id);
-            return response()->json($encomienda);
+            ])->first();
+            if(!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada.',
+                    'id_buscado' => $id
+                ],404);
+            }
+            $estados = EstadoEncomienda::where('idEncomienda',$id)->orderBy('fechaCambio','desc')->get();
+            $estadoActual = $estados->first();
+            return response()->json([
+                'message' => 'Encomienda encontrada exitosamente.',
+                'encomienda' => $encomienda,
+                'estado_actual' => $estadoActual ? [
+                    'idEstadoEncomienda' => $estadoActual->idEstadoEncomienda,
+                    'descripcionEstado' => $estadoActual->descripcionEstado,
+                    'fechaCambio' => $estadoActual->fechaCambio,
+                ] : null,
+                'historial_estados' => $estados->map(function($estado) {return [
+                    'idEstadoEncomienda' => $estado->idEstadoEncomienda,
+                    'descripcionEstado' => $estado->descripcionEstado,
+                    'fechaCambio' => $estado->fechaCambio,
+                ]; })
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Encomienda no encontrada',
                 'error' => $e->getMessage()
-            ], 404);
+            ], 500);
         }
     }
 
@@ -160,30 +187,30 @@ class EncomiendaController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            $encomienda = Encomienda::findOrFail($id);
-            
-            $request->validate([
-                'descripcion' => 'required|string',
-                'costo' => 'required|numeric|min:0',
-                'observaciones' => 'nullable|string',
-                'estadoPago' => 'required|in:Pendiente,Parcial,Pagado'
+            $validated = $request->validate([
+                'observaciones' => 'nullable|string|max:500'
             ]);
-
-            $encomienda->update($request->only([
-                'descripcion',
-                'costo',
-                'observaciones',
-                'estadoPago'
-            ]));
-
+            $encomienda = Encomienda::find($id);
+            if(!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            if(isset($validated['observaciones'])) {
+                $encomienda->update([
+                    'observaciones' => $validated['observaciones']
+                ]);
+            }
+            $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
             return response()->json([
-                'message' => 'Encomienda actualizada exitosamente',
-                'data' => $encomienda
-            ]);
+                'message' => 'Encmienda actualizada exitosamente.',
+                'encomienda' => $encomienda,
+            ],200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al actualizar encomienda',
-                'error' => $e->getMessage()
+                'message' => 'Error al actualizar encomienda    .',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

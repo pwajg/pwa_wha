@@ -68,17 +68,16 @@ class ClienteController extends Controller
     /**
      * Buscar cliente por DNI
      */
-    public function buscarPorDni(string $dni)
+    public function buscarPorDocumento(string $documento)
     {
         try {
-            $cliente = Cliente::byDni($dni)->first();
+            $cliente = Cliente::byDocumento($documento)->first();
             
             if (!$cliente) {
                 return response()->json([
                     'message' => 'Cliente no encontrado'
                 ], 404);
             }
-
             return response()->json($cliente);
         } catch (\Exception $e) {
             return response()->json([
