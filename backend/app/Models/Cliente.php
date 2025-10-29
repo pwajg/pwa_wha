@@ -37,7 +37,7 @@ class Cliente extends Model
     }
 
     // Scope para buscar por número de documento
-    public function scopeByDni($query, $numeroDocumento)
+    public function scopeByDocumento($query, $numeroDocumento)
     {
         return $query->where('numeroDocumento', $numeroDocumento);
     }
