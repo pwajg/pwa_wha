@@ -176,57 +176,58 @@ class FleteController extends Controller
             ], 500);
         }
     }
-
     /**
      * Asignar encomiendas a un flete específico
      */
-    public function asignarEncomiendas(Request $request, $fleteId)
+    public function EncomiendasAsignadas(Request $request, $fleteId)
     {
         try {
-            $validated = $request->validate([
-                'encomiendas' => 'required|array|min:1',
-                'encomiendas.*' => 'required|exists:encomiendas,id'
-            ]);
-
-            $flete = Flete::find($fleteId);
+            $flete = Flete::where('idFlete',$fleteId)->first();
             if (!$flete) {
-                return response()->json(['message' => 'Flete no encontrado'], 404);
-            }
-
-            // Verificar que el flete esté en estado "Registrado"
-            $estadoActual = $flete->estadoFletes()->latest()->first();
-            if (!$estadoActual || $estadoActual->descripcionEstado !== 'Registrado') {
                 return response()->json([
-                    'message' => 'Solo se pueden asignar encomiendas a fletes en estado "Registrado"'
-                ], 400);
+                    'message' => 'Flete no encontrado',
+                    'id_buscado' => $fleteId
+                ],404);
             }
-
-            DB::beginTransaction();
-
-            try {
-                // Asignar encomiendas al flete
-                foreach ($validated['encomiendas'] as $encomiendaId) {
-                    DB::table('encomiendas')
-                        ->where('id', $encomiendaId)
-                        ->update(['flete_id' => $flete->idFlete]);
-                }
-
-                DB::commit();
-
-                return response()->json([
-                    'message' => 'Encomiendas asignadas exitosamente al flete',
-                    'flete' => $flete->load(['SucursalOrigen', 'SucursalDestino'])
-                ], 200);
-
-            } catch (\Exception $e) {
-                DB::rollback();
-                throw $e;
-            }
-
+            $encomiendas = $flete->encomiendas()
+                ->with([
+                    'ClienteRemitente',
+                    'ClienteDestinatario',
+                    'estadoEncomiendas' => function($query) {
+                        $query->orderBy('fechaCambio','desc');
+                    }
+                ])
+                ->get()
+                ->map(function($enc) {
+                    $estadoActual = $enc->estadoEncomiendas->first();
+                    return [
+                        'idEncomienda' => $enc->idEncomienda,
+                        'codigo' => $enc->codigo,
+                        'descripcion' => $enc->descripcion,
+                        'costo' => $enc->costo,
+                        'estadoPago' => $enc->estadoPago,
+                        'ClienteRemitente' => $enc->ClienteRemitente,
+                        'ClienteDestinatario' => $enc->ClienteDestinatario,
+                        'estado_actual' => $estadoActual ? [
+                            'idEstadoEncomienda' => $estadoActual->idEstadoEncomienda,
+                            'descripcionEstado' => $estadoActual->descripcionEstado,
+                            'fechaCambio' => $estadoActual->fechaCambio
+                        ] : null
+                    ];
+                });
+            return response()->json([
+                'message' => 'Encomiendas encontradas exitosamente.',
+                'flete' => [
+                    'idFlete' => $flete->idFlete,
+                    'codigo' => $flete->codigo,
+                ],
+                'encomiendas' => $encomiendas
+            ],200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al asignar encomiendas: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Error al obtener encomiendas asignadas al flete.',
+                'error' => $e->getMessage()
+            ],500);
         }
     }
 
@@ -349,6 +350,20 @@ class FleteController extends Controller
                     'EnDestino',
                     $validated['observaciones'] ?? 'Flete en destino'
                 );
+                $encomiendaIds = \DB::table('encomiendas')
+                    ->where('idFlete',$flete->idFlete)
+                    ->pluck('idEncomienda');
+                if($encomiendaIds->isNotEmpty()) {
+                    $now = now();
+                    $rows = $encomiendaIds->map(fn($id) => [
+                        'idEncomienda' => $id,
+                        'descripcionEstado' => 'EnDestino',
+                        'fechaCambio' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->all();
+                    \DB::table('estado_encomiendas')->insert($rows);
+                }
                 DB::commit();
                 return response()->json([
                     'message' => 'Flete actualizado exitosamente.',
@@ -609,6 +624,20 @@ class FleteController extends Controller
                     'Reprogramado',
                     $validated['observaciones'] ?? 'Flete reprogramado'
                 );
+                $encomiendaIds = \DB::table('encomiendas')
+                    ->where('idFlete',$flete->idFlete)
+                    ->pluck('idEncomienda');
+                if($encomiendaIds->isNotEmpty()) {
+                    $now = now();
+                    $rows = $encomiendaIds->map(fn($id) => [
+                        'idEncomienda' => $id,
+                        'descripcionEstado' => 'Reprogramado',
+                        'fechaCambio' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->all();
+                    \DB::table('estado_encomiendas')->insert($rows);
+                }
                 DB::commit();
                 $estadoReprogramado = EstadoFlete::where('idFlete',$flete->idFlete)
                     ->where('descripcionEstado','Reprogramado')

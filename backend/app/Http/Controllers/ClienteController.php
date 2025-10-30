@@ -94,19 +94,11 @@ class ClienteController extends Controller
     {
         try {
             $cliente = Cliente::findOrFail($id);
-            
-            $request->validate([
-                'tipoCliente' => 'required|string|in:Persona Natural,Empresa,Extranjero',
-                'dni' => 'required|string|unique:clientes,dni,' . $id . ',idCliente',
+            $validated = $request->validate([
                 'nombre' => 'required|string|max:255',
-                'apellido' => 'nullable|string|max:255',
                 'telefono' => 'required|string|max:20',
-                'direccion' => 'nullable|string|max:255',
-                'email' => 'nullable|email|max:255'
             ]);
-
-            $cliente->update($request->all());
-
+            $cliente->update($request->only(['nombre','telefono']));
             return response()->json([
                 'message' => 'Cliente actualizado exitosamente',
                 'data' => $cliente
@@ -126,8 +118,13 @@ class ClienteController extends Controller
     {
         try {
             $cliente = Cliente::findOrFail($id);
+            if(!$cliente) {
+                return response()->json([
+                    'message' => 'Cliente no encontrado.',
+                    'id_buscado' => $id
+                ], 404);
+            }
             $cliente->delete();
-
             return response()->json([
                 'message' => 'Cliente eliminado exitosamente'
             ]);

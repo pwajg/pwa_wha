@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Encomienda;
 use App\Models\Cliente;
+use App\Models\Pago;
 use App\Models\Flete;
 use App\Models\EstadoEncomienda;
 use Illuminate\Http\Request;
@@ -221,16 +222,30 @@ class EncomiendaController extends Controller
     public function destroy(string $id)
     {
         try {
-            $encomienda = Encomienda::findOrFail($id);
-            $encomienda->delete();
-
-            return response()->json([
-                'message' => 'Encomienda eliminada exitosamente'
-            ]);
+            $encomienda = Encomienda::find($id);
+            if(!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada.',
+                    'id_buscado' => $id
+                ], 404);
+            }
+            DB::beginTransaction();
+            try {
+                EstadoEncomienda::where('idEncomienda',$encomienda->idEncomienda)->delete();
+                $encomienda->delete();
+                DB::commit();
+                return response()->json([
+                    'message' => 'Encomienda eliminada exitosamente.',
+                    'codigo' => $encomienda->codigo,
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al eliminar encomienda',
-                'error' => $e->getMessage()
+                'message' => 'Error al eliminar encomienda.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -293,6 +308,75 @@ class EncomiendaController extends Controller
                 'nombre' => $clienteData['nombre'],
                 'telefono' => $clienteData['telefono']
             ]);
+        }
+    }
+
+    public function pagosEncomienda(string $idEncomienda) {
+        try {
+            $encomienda = Encomienda::where('idEncomienda',$idEncomienda)->first();
+            if (!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada.',
+                    'id_buscado' => $idEncomienda
+                ], 404);
+            }
+            $pagos = Pago::where('idEncomienda',$encomienda->idEncomienda)
+                ->orderBy('fechaPago','desc')
+                ->orderBy('idPago','asc')
+                ->get();
+            $totalPagado = $pagos->sum('monto');
+            $adeudo = $encomienda->costo - $totalPagado;
+            return response()->json([
+                'message' => 'Pagos obtenidos exitosamente.',
+                'encomienda' => [
+                    'idEncomienda' => $encomienda->idEncomienda,
+                    'codigo' => $encomienda->codigo,
+                    'costo' => $encomienda->costo,
+                    'estadoPago' => $encomienda->estadoPago,
+                ],
+                'total_pagado' => $totalPagado,
+                'adeudo' => $adeudo,
+                'pagos' => $pagos
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener pagos.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function adeudoEncomienda (string $idEncomienda){
+        try {
+            $encomienda = Encomienda::where('idEncomienda',$idEncomienda)->first();
+            if (!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada.',
+                    'id_buscado' => $idEncomienda
+                ], 404);
+            }
+            $totalPagado = \DB::table('pagos')
+                ->where('idEncomienda',$encomienda->idEncomienda)
+                ->sum('monto');
+            $costo = (float) $encomienda->costo;
+            $adeudo = max(0, $costo - (float) $totalPagado);
+            if ($adeudo == 0) {
+                $mensaje = 'Encomienda pagada completamente.';
+            } elseif ($adeudo > 0) {
+                $mensaje = 'Encomienda pendiente de pago: ' . number_format($adeudo,2);
+            }
+            return response()->json([
+                'idEncomienda' => $encomienda->idEncomienda,
+                'codigo' => $encomienda->codigo,
+                'costo' => $costo,
+                'total_pagado' => (float) $totalPagado,
+                'adeudo' => $adeudo,
+                'message' => $mensaje,
+            ],200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener adeudo.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }
