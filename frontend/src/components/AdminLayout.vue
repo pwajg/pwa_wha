@@ -54,7 +54,7 @@ export default {
 /* Layout principal */
 .admin-layout {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--color-bg-soft);
   padding-top: 4rem; /* Espacio para el header fijo de 4rem */
 }
 

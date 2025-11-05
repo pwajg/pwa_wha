@@ -3,8 +3,8 @@
     <div class="reportes-page">
       <!-- Header con título -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Reportes y Estadísticas</h1>
-        <p class="text-gray-600">Análisis de datos y métricas del negocio</p>
+        <h1 class="text-3xl font-bold text-gray-700 dark:text-white mb-2">Reportes y Estadísticas</h1>
+        <p class="text-gray-600 dark:text-white">Análisis de datos y métricas del negocio</p>
       </div>
 
       <!-- Filtros de fecha -->

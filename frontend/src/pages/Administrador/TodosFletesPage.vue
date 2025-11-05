@@ -3,10 +3,10 @@
     <div class="fletes-page">
       <!-- Header con título -->
       <div class="mb-6 sm:mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-700 dark:text-white mb-2">
           Todos los Fletes
         </h1>
-        <p class="text-sm sm:text-base text-gray-600">Historial completo de fletes registrados en el sistema</p>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-white">Historial completo de fletes registrados en el sistema</p>
       </div>
 
       <!-- Filtros de fecha -->
@@ -482,4 +482,489 @@ export default {
   transform: translateY(-2px);
 }
 </style>
+
+
+
+
+
+export default {
+
+  name: 'TodosFletesPage',
+
+  components: {
+
+    AdminLayout
+
+  },
+
+  data() {
+
+    return {
+
+      fletes: [],
+
+      searchTerm: '',
+
+      filteredFletes: [],
+
+      vistaActual: 'box',
+
+      loading: false,
+
+      filtroAnio: '',
+
+      filtroMes: '',
+
+      filtroDia: '',
+
+      meses: [
+
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+
+      ]
+
+    }
+
+  },
+
+  computed: {
+
+    añosDisponibles() {
+
+      const años = new Set()
+
+      // Incluir años de los fletes existentes
+
+      this.fletes.forEach(flete => {
+
+        if (flete.created_at) {
+
+          const año = new Date(flete.created_at).getFullYear()
+
+          años.add(año)
+
+        }
+
+      })
+
+      // Incluir año actual si no está en la lista
+
+      const añoActual = new Date().getFullYear()
+
+      años.add(añoActual)
+
+      // Incluir algunos años próximos y pasados para facilitar la navegación
+
+      for (let i = añoActual - 2; i <= añoActual + 1; i++) {
+
+        años.add(i)
+
+      }
+
+      return Array.from(años).sort((a, b) => b - a) // De más reciente a más antiguo
+
+    },
+
+    
+
+    diasDisponibles() {
+
+      if (!this.filtroAnio || !this.filtroMes) return []
+
+      
+
+      const año = parseInt(this.filtroAnio)
+
+      const mes = parseInt(this.filtroMes)
+
+      const diasEnMes = new Date(año, mes, 0).getDate()
+
+      return Array.from({ length: diasEnMes }, (_, i) => i + 1)
+
+    },
+
+    
+
+    mensajeSinFletes() {
+
+      if (this.filtroAnio || this.filtroMes || this.filtroDia) {
+
+        let fecha = ''
+
+        if (this.filtroDia && this.filtroMes && this.filtroAnio) {
+
+          const mesNombre = this.meses[parseInt(this.filtroMes) - 1]
+
+          fecha = `${this.filtroDia} de ${mesNombre} de ${this.filtroAnio}`
+
+        } else if (this.filtroMes && this.filtroAnio) {
+
+          const mesNombre = this.meses[parseInt(this.filtroMes) - 1]
+
+          fecha = `${mesNombre} de ${this.filtroAnio}`
+
+        } else if (this.filtroAnio) {
+
+          fecha = `año ${this.filtroAnio}`
+
+        }
+
+        
+
+        return {
+
+          titulo: 'No hay fletes registrados',
+
+          mensaje: `No se encontraron fletes registrados para la fecha seleccionada: ${fecha}. Intenta con otra fecha o limpia los filtros para ver todos los fletes.`
+
+        }
+
+      }
+
+      
+
+      return {
+
+        titulo: 'No hay fletes registrados',
+
+        mensaje: 'No se encontraron fletes en el sistema. Los fletes se crearán automáticamente o pueden ser creados manualmente.'
+
+      }
+
+    }
+
+  },
+
+  async mounted() {
+
+    await this.loadFletes()
+
+  },
+
+  methods: {
+
+    async loadFletes() {
+
+      try {
+
+        this.loading = true
+
+        await this.cargarFletesConFiltros()
+
+      } catch (error) {
+
+        console.error('Error al cargar fletes:', error)
+
+        if (error.response && error.response.data && error.response.data.message) {
+
+          this.$toast?.error(error.response.data.message)
+
+        } else {
+
+          this.$toast?.error('Error al cargar fletes')
+
+        }
+
+        this.fletes = []
+
+        this.filteredFletes = []
+
+      } finally {
+
+        this.loading = false
+
+      }
+
+    },
+
+    
+
+    async cargarFletesConFiltros() {
+
+      try {
+
+        // Construir parámetros solo si hay filtros aplicados
+
+        const params = {}
+
+        if (this.filtroAnio) params.anio = this.filtroAnio
+
+        if (this.filtroMes) params.mes = this.filtroMes
+
+        if (this.filtroDia) params.dia = this.filtroDia
+
+        
+
+        // Si no hay filtros, cargar todos los fletes sin parámetros
+
+        const response = await axios.get('/fletes', Object.keys(params).length > 0 ? { params } : {})
+
+        
+
+        console.log('Respuesta de la API:', response.data)
+
+        
+
+        if (response.data && response.data.data) {
+
+          this.fletes = response.data.data
+
+          console.log('Fletes cargados:', this.fletes.length)
+
+          
+
+          // Aplicar filtro de búsqueda en el frontend
+
+          if (this.searchTerm) {
+
+            const term = this.searchTerm.toLowerCase()
+
+            this.filteredFletes = this.fletes.filter(flete => 
+
+              flete.codigo.toLowerCase().includes(term) ||
+
+              flete.sucursalOrigen?.nombre.toLowerCase().includes(term) ||
+
+              flete.sucursalDestino?.nombre.toLowerCase().includes(term) ||
+
+              flete.estado.toLowerCase().includes(term)
+
+            )
+
+          } else {
+
+            this.filteredFletes = [...this.fletes]
+
+          }
+
+        } else {
+
+          console.warn('No se recibieron datos en la respuesta')
+
+          this.fletes = []
+
+          this.filteredFletes = []
+
+        }
+
+      } catch (error) {
+
+        console.error('Error en cargarFletesConFiltros:', error)
+
+        if (error.response) {
+
+          console.error('Respuesta de error:', error.response.data)
+
+          console.error('Status:', error.response.status)
+
+          console.error('Headers:', error.response.headers)
+
+        } else if (error.request) {
+
+          console.error('No se recibió respuesta del servidor:', error.request)
+
+        } else {
+
+          console.error('Error configurando la petición:', error.message)
+
+        }
+
+        throw error
+
+      }
+
+    },
+
+    
+
+    aplicarFiltroFecha() {
+
+      this.loadFletes()
+
+    },
+
+    
+
+    filterFletes() {
+
+      // Solo filtrar por búsqueda en el frontend si ya hay fletes cargados
+
+      if (this.fletes.length > 0) {
+
+        if (this.searchTerm) {
+
+          const term = this.searchTerm.toLowerCase()
+
+          this.filteredFletes = this.fletes.filter(flete => 
+
+            flete.codigo.toLowerCase().includes(term) ||
+
+            flete.sucursalOrigen?.nombre.toLowerCase().includes(term) ||
+
+            flete.sucursalDestino?.nombre.toLowerCase().includes(term) ||
+
+            flete.estado.toLowerCase().includes(term)
+
+          )
+
+        } else {
+
+          this.filteredFletes = [...this.fletes]
+
+        }
+
+      }
+
+    },
+
+    
+
+    limpiarFiltros() {
+
+      this.filtroAnio = ''
+
+      this.filtroMes = ''
+
+      this.filtroDia = ''
+
+      this.searchTerm = ''
+
+      this.loadFletes()
+
+    },
+
+    
+
+    verEncomiendas(flete) {
+
+      this.$router.push({
+
+        name: 'FleteEncomiendas',
+
+        params: { fleteId: flete.id },
+
+        query: { 
+
+          codigo: flete.codigo,
+
+          destino: flete.sucursalDestino?.nombre || 'Sin destino'
+
+        }
+
+      })
+
+    },
+
+    
+
+    getEstadoClass(estado) {
+
+      const clases = {
+
+        'Registrado': 'bg-gray-100 text-gray-800',
+
+        'Enviado': 'bg-indigo-100 text-indigo-800',
+
+        'En origen': 'bg-yellow-100 text-yellow-800',
+
+        'En tránsito': 'bg-blue-100 text-blue-800',
+
+        'En destino': 'bg-green-100 text-green-800',
+
+        'De vuelta': 'bg-purple-100 text-purple-800',
+
+        'Sin estado': 'bg-gray-100 text-gray-500'
+
+      }
+
+      return clases[estado] || 'bg-gray-100 text-gray-800'
+
+    },
+
+    
+
+    formatDate(dateString) {
+
+      if (!dateString) return '-'
+
+      const date = new Date(dateString)
+
+      return date.toLocaleDateString('es-ES', {
+
+        year: 'numeric',
+
+        month: '2-digit',
+
+        day: '2-digit'
+
+      })
+
+    }
+
+  }
+
+}
+
+</script>
+
+
+
+<style scoped>
+
+.fletes-page {
+
+  padding: 1rem 1.5rem;
+
+}
+
+
+
+@media (max-width: 640px) {
+
+  .fletes-page {
+
+    padding: 0.75rem 1rem;
+
+  }
+
+  
+
+  .overflow-x-auto {
+
+    -webkit-overflow-scrolling: touch;
+
+  }
+
+  
+
+  table {
+
+    min-width: 700px;
+
+  }
+
+}
+
+
+
+.grid > div {
+
+  transition: transform 0.2s ease-in-out;
+
+}
+
+
+
+.grid > div:hover {
+
+  transform: translateY(-2px);
+
+}
+
+</style>
+
+
+
 

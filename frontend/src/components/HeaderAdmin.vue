@@ -7,7 +7,7 @@
         <i class="icon">☰</i>
       </button>
       
-      <span class="logo">WAFREN</span>
+      <span class="logo">WHAFREN</span>
       
       <!-- Icono de perfil con dropdown -->
       <div class="profile-dropdown">
@@ -139,7 +139,7 @@ export default {
   right: 0;
   width: 100%;
   height: 4rem; /* Altura fija por defecto */
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   box-sizing: border-box;

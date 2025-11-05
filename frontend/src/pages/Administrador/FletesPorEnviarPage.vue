@@ -3,10 +3,10 @@
     <div class="fletes-page">
       <!-- Header con título -->
       <div class="mb-6 sm:mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-700 dark:text-white mb-2">
           Fletes por Enviar (Hoy)
         </h1>
-        <p class="text-sm sm:text-base text-gray-600">Fletes registrados que pueden enviarse hoy</p>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-white">Fletes registrados que pueden enviarse hoy</p>
       </div>
 
       <!-- Indicador de carga -->
@@ -78,8 +78,8 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No hay fletes por enviar</h3>
-          <p class="mt-1 text-sm text-gray-500">No se encontraron fletes registrados para enviar hoy.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-700 dark:text-white">No hay fletes por enviar</h3>
+          <p class="mt-1 text-sm text-gray-600 dark:text-white">No se encontraron fletes registrados para enviar hoy.</p>
         </div>
       </div>
 
@@ -147,8 +147,8 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No hay fletes por enviar</h3>
-          <p class="mt-1 text-sm text-gray-500">No se encontraron fletes registrados para enviar hoy.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-700 dark:text-white">No hay fletes por enviar</h3>
+          <p class="mt-1 text-sm text-gray-600 dark:text-white">No se encontraron fletes registrados para enviar hoy.</p>
         </div>
       </div>
     </div>

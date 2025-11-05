@@ -3,8 +3,8 @@
     <div class="configuracion-page">
       <!-- Header con título -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Configuración del Sistema</h1>
-        <p class="text-gray-600">Gestiona la configuración general del sistema</p>
+        <h1 class="text-3xl font-bold text-gray-700 dark:text-white mb-2">Configuración del Sistema</h1>
+        <p class="text-gray-600 dark:text-white">Gestiona la configuración general del sistema</p>
       </div>
 
       <!-- Configuraciones principales -->
