@@ -70,20 +70,18 @@ class SucursalController extends Controller
     {
         try {
             $sucursal = Sucursal::findOrFail($id);
-            
-            $request->validate([
-                'nombre' => 'sometimes|required|string|max:255',
-                'direccion' => 'sometimes|required|string|max:255',
-                'ciudad' => 'sometimes|required|string|max:255',
-                'telefono' => 'sometimes|required|string|max:9'
+            $validated = $request->validate([
+                'nombre' => 'required|string|max:255',
+                'telefono' => 'required|string|max:20',
             ]);
-
-            $sucursal->update($request->all());
-
-            return response()->json($sucursal, 200);
+            $sucursal->update($request->only(['nombre','direccion','telefono']));
+            return response()->json([
+                'message' => 'Sucursal actualizado exitosamente',
+                'data' => $sucursal
+            ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al actualizar sucursal',
+                'message' => 'Error al actualizar sucursal.',
                 'error' => $e->getMessage()
             ], 500);
         }

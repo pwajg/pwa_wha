@@ -19,7 +19,9 @@ class Flete extends Model
         'idSucursalOrigen',
         'idSucursalDestino'
     ];
-
+    public function encomiendas() {
+        return $this->hasMany(\App\Models\Encomienda::class,'idFlete','idFlete');
+    }
     public function Transporte(){
         return $this->belongsTo(Transporte::class, 'idTransporte', 'idTransporte');
     }
@@ -28,8 +30,7 @@ class Flete extends Model
     }
     public function SucursalDestino(){
         return $this->belongsTo(Sucursal::class,'idSucursalDestino','id');
-    }
-    
+    }        
     public function estadoFletes(){
         return $this->hasMany(EstadoFlete::class, 'idFlete', 'idFlete');
     }

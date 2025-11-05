@@ -14,10 +14,10 @@ class Pago extends Model
     public $timestamps = true;
 
     protected $fillable = [
+        'codigo',
         'monto',
         'fechaPago',
-        'metodoPago',
-        'observaciones',
+        'modalidadPago',
         'idEncomienda'
     ];
 
