@@ -5,6 +5,8 @@ import HomeWrapper from '../components/HomeWrapper.vue';
 import CrearEncomiendaPage from '../pages/CrearEncomiendaPage.vue';
 import HomeAdminPage from '../pages/Administrador/HomeAdminPage.vue';
 import FletesPage from '../pages/Administrador/FletesPage.vue';
+import FletesPorEnviarPage from '../pages/Administrador/FletesPorEnviarPage.vue';
+import TodosFletesPage from '../pages/Administrador/TodosFletesPage.vue';
 import FleteEncomiendasPage from '../pages/Administrador/FleteEncomiendasPage.vue';
 import UsuariosPage from '../pages/Administrador/UsuariosPage.vue';
 import SucursalesPage from '../pages/Administrador/SucursalesPage.vue';
@@ -49,6 +51,18 @@ const routes = [
         path: '/admin/fletes', 
         name: 'Fletes', 
         component: FletesPage, 
+        meta: { requiresAuth: true, requiresAdmin: true } 
+    },
+    { 
+        path: '/admin/fletes/por-enviar', 
+        name: 'FletesPorEnviar', 
+        component: FletesPorEnviarPage, 
+        meta: { requiresAuth: true, requiresAdmin: true } 
+    },
+    { 
+        path: '/admin/fletes/todos', 
+        name: 'TodosFletes', 
+        component: TodosFletesPage, 
         meta: { requiresAuth: true, requiresAdmin: true } 
     },
     { 

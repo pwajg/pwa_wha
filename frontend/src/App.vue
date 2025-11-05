@@ -1,15 +1,25 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import Usuarios from './components/Usuarios.vue'
+import { onMounted } from 'vue'
+import { useTheme } from './composables/useTheme'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
+const { initTheme, fetchUserTheme } = useTheme()
+
+// Inicializar tema al montar la app
+onMounted(async () => {
+  // Inicializar tema básico
+  await initTheme()
+  
+  // Si hay usuario autenticado, sincronizar con backend
+  const token = localStorage.getItem('token')
+  if (token) {
+    await fetchUserTheme()
+  }
+})
 </script>
 
 <template>
-<!--   <div>
-    <h1 class="text-2xl font-bold">Gestión de Usuarios</h1>
-    <Usuarios />
-  </div>
-  <HelloWorld msg="Vite + Vue" /> -->
   <router-view />
 </template>
 

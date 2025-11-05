@@ -3,14 +3,70 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Theme tokens */
+  --color-bg: #f8fafc;
+  --color-bg-soft: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-primary: #3b82f6;
+  --color-primary-strong: #1d4ed8;
+  --color-hover: #f3f4f6;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.08);
+
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Transición suave para cambios de tema */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark {
+  --color-bg: #0b1220;
+  --color-bg-soft: #0e1526;
+  --color-surface: #111a2e;
+  --color-border: #1f2a44;
+  --color-text: #f3f4f6;         /* texto casi blanco para contraste adecuado */
+  --color-text-muted: #cbd5e1;   /* gris claro para secundarios en dark */
+  --color-primary: #60a5fa;
+  --color-primary-strong: #3b82f6;
+  --color-hover: #0f172a;
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.4);
+  --shadow-md: 0 6px 12px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+
+/* Transición suave para elementos HTML y body */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Transición suave para elementos principales */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Evitar transiciones en elementos que no deben tenerlas */
+svg,
+canvas,
+img,
+video,
+iframe {
+  transition-property: none;
 }
 
 a {
@@ -28,7 +84,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--color-bg);
 }
 
 h1 {
@@ -66,17 +122,70 @@ button:focus-visible {
   text-align: center;
 }
 
+/* Utilidad global para unificar altura de botones medianos (coherente con header) */
+.btn-md-height {
+  height: 2.5rem; /* desktop/header */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .btn-md-height {
+    height: 2rem; /* header móvil pequeño */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .btn-md-height {
+    height: 3rem; /* header tablet grande */
+  }
+}
+
 /* Configuración global para modo claro */
 :root {
-  color: #213547;
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-bg);
 }
 
 a:hover {
-  color: #747bff;
+  color: var(--color-primary);
 }
 
 button {
-  background-color: #f9f9f9;
-  color: #213547;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Sutil focus/active para todos los elementos interactivos */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  outline: none;
+}
+
+button:focus,
+button:focus-visible,
+a:focus,
+a:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible,
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  border-color: var(--color-border);
+}
+
+button:active,
+[role="button"]:active {
+  transform: scale(0.98);
 }

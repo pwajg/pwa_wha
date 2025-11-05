@@ -67,6 +67,8 @@
             class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos los estados</option>
+            <option value="Registrado">Registrado</option>
+            <option value="Enviado">Enviado</option>
             <option value="En origen">En origen</option>
             <option value="En tránsito">En tránsito</option>
             <option value="En destino">En destino</option>
@@ -429,53 +431,26 @@ export default {
     async loadFletes() {
       try {
         this.loading = true
-        // Simular datos de fletes basados en los seeders
-        this.fletes = [
-          {
-            id: 1,
-            codigo: 'FLT-251015-001',
-            sucursalOrigen: { id: 1, nombre: 'Sucursal Principal' },
-            sucursalDestino: { id: 2, nombre: 'Lima Centro' },
-            estado: 'En origen',
-            totalEncomiendas: 2,
-            observaciones: 'Flete programado para Lima',
-            created_at: '2025-10-15',
-            encomiendas: [
-              { id: 1, codigo: 'ENC-251008-001', cliente: { nombre: 'Juan Carlos Pérez García' }, estado: 'En origen', valor: 25.50 },
-              { id: 2, codigo: 'ENC-251008-004', cliente: { nombre: 'Carlos Alberto Mendoza Silva' }, estado: 'En origen', valor: 35.75 }
-            ]
-          },
-          {
-            id: 2,
-            codigo: 'FLT-251015-002',
-            sucursalOrigen: { id: 1, nombre: 'Sucursal Principal' },
-            sucursalDestino: { id: 3, nombre: 'Arequipa Centro' },
-            estado: 'En tránsito',
-            totalEncomiendas: 1,
-            observaciones: 'Flete en camino a Arequipa',
-            created_at: '2025-10-15',
-            encomiendas: [
-              { id: 3, codigo: 'ENC-251008-002', cliente: { nombre: 'Comercial Los Andes S.A.C.' }, estado: 'En tránsito', valor: 45.00 }
-            ]
-          },
-          {
-            id: 3,
-            codigo: 'FLT-251015-003',
-            sucursalOrigen: { id: 1, nombre: 'Sucursal Principal' },
-            sucursalDestino: { id: 4, nombre: 'Cusco Centro' },
-            estado: 'En destino',
-            totalEncomiendas: 1,
-            observaciones: 'Flete llegó a Cusco',
-            created_at: '2025-10-15',
-            encomiendas: [
-              { id: 4, codigo: 'ENC-251008-003', cliente: { nombre: 'María Elena Rodríguez López' }, estado: 'En destino', valor: 15.00 }
-            ]
-          }
-        ]
-        this.filteredFletes = [...this.fletes]
+        const response = await axios.get('/fletes')
+        
+        // La API retorna { message, data, total }
+        if (response.data && response.data.data) {
+          this.fletes = response.data.data
+          this.filteredFletes = [...this.fletes]
+        } else {
+          // Fallback si la estructura es diferente
+          this.fletes = response.data || []
+          this.filteredFletes = [...this.fletes]
+        }
       } catch (error) {
         console.error('Error al cargar fletes:', error)
-        this.$toast?.error('Error al cargar fletes')
+        if (error.response && error.response.data && error.response.data.message) {
+          this.$toast?.error(error.response.data.message)
+        } else {
+          this.$toast?.error('Error al cargar fletes')
+        }
+        this.fletes = []
+        this.filteredFletes = []
       } finally {
         this.loading = false
       }
@@ -601,10 +576,13 @@ export default {
     
     getEstadoClass(estado) {
       const clases = {
+        'Registrado': 'bg-gray-100 text-gray-800',
+        'Enviado': 'bg-indigo-100 text-indigo-800',
         'En origen': 'bg-yellow-100 text-yellow-800',
         'En tránsito': 'bg-blue-100 text-blue-800',
         'En destino': 'bg-green-100 text-green-800',
-        'De vuelta': 'bg-purple-100 text-purple-800'
+        'De vuelta': 'bg-purple-100 text-purple-800',
+        'Sin estado': 'bg-gray-100 text-gray-500'
       }
       return clases[estado] || 'bg-gray-100 text-gray-800'
     },

@@ -1,10 +1,22 @@
 import { createApp } from 'vue'
 import './style.css'
-import './assets/css/wafren-colors.css'
+import './assets/css/whafren-colors.css'
+import './assets/css/theme-variables.css'
 import 'tailwindcss/tailwind.css'
 import App from './App.vue'
 import router from './router'
 import axios from 'axios'
+
+// Inicializar tema básico ANTES de crear la app para evitar flash
+// Esto establece el tema inicial basado en localStorage o preferencia del sistema
+const savedTheme = localStorage.getItem('theme')
+const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    document.documentElement.classList.add('dark')
+} else {
+    document.documentElement.classList.remove('dark')
+}
+
 
 // Configurar axios con la URL base del backend
 axios.defaults.baseURL = '/api'

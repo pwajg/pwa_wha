@@ -251,9 +251,11 @@ export default {
   left: 0;
   right: 0;
   width: 100%;
+  height: 4rem; /* Altura fija igual al header de admin */
   background-color: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  box-sizing: border-box;
 }
 
 .header-content {
@@ -262,6 +264,8 @@ export default {
   align-items: center;
   padding: 0.75rem 1rem;
   max-width: 100%;
+  height: 4rem; /* Altura fija igual al header de admin */
+  box-sizing: border-box;
 }
 
 .logo {
@@ -282,6 +286,11 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: 2.5rem; /* Altura fija para que encaje bien en el header de 4rem */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .login-btn:hover {
@@ -291,7 +300,7 @@ export default {
 
 /* MAIN CONTENT COMPLETAMENTE RESPONSIVO */
 .main-content {
-  margin-top: 4rem;
+  margin-top: 4rem; /* Ajustado para coincidir con altura del header */
   margin-bottom: 3rem;
   padding: 1rem;
   display: flex;
@@ -520,8 +529,13 @@ export default {
 
 /* Móvil pequeño (320px - 480px) */
 @media (max-width: 480px) {
+  .header {
+    height: 3rem; /* Altura fija igual al header de admin en móviles pequeños */
+  }
+  
   .header-content {
     padding: 0.5rem 0.75rem;
+    height: 3rem; /* Altura fija igual al header de admin */
   }
   
   .logo {
@@ -531,10 +545,11 @@ export default {
   .login-btn {
     padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
+    height: 2rem; /* Altura ajustada para header de 3rem */
   }
   
   .main-content {
-    margin-top: 3.5rem;
+    margin-top: 3rem; /* Ajustado para coincidir con altura del header */
     margin-bottom: 2.5rem;
     padding: 0.75rem;
   }
@@ -602,8 +617,13 @@ export default {
 
 /* Móvil (481px - 768px) */
 @media (min-width: 481px) and (max-width: 768px) {
+  .header {
+    height: 4rem; /* Altura fija igual al header de admin */
+  }
+  
   .header-content {
     padding: 0.75rem 1rem;
+    height: 4rem; /* Altura fija igual al header de admin */
   }
   
   .logo {
@@ -613,10 +633,11 @@ export default {
   .login-btn {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
+    height: 2.5rem; /* Altura ajustada para header de 4rem */
   }
   
   .main-content {
-    margin-top: 4rem;
+    margin-top: 4rem; /* Ajustado para coincidir con altura del header */
     margin-bottom: 3rem;
     padding: 1rem;
   }
@@ -646,8 +667,13 @@ export default {
 
 /* Tablet (769px - 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
+  .header {
+    height: 5rem; /* Altura fija igual al header de admin en tablets grandes */
+  }
+  
   .header-content {
     padding: 1rem 1.5rem;
+    height: 5rem; /* Altura fija igual al header de admin */
   }
   
   .logo {
@@ -657,10 +683,11 @@ export default {
   .login-btn {
     padding: 0.625rem 1.25rem;
     font-size: 1rem;
+    height: 3rem; /* Altura ajustada para header de 5rem */
   }
   
   .main-content {
-    margin-top: 5rem;
+    margin-top: 5rem; /* Ajustado para coincidir con altura del header */
     margin-bottom: 4rem;
     padding: 1.5rem;
   }
@@ -695,8 +722,13 @@ export default {
 
 /* Desktop (1025px+) */
 @media (min-width: 1025px) {
+  .header {
+    height: 4rem; /* Altura fija igual al header de admin en desktop */
+  }
+  
   .header-content {
     padding: 1rem 2rem;
+    height: 4rem; /* Altura fija igual al header de admin */
   }
   
   .logo {
@@ -706,10 +738,11 @@ export default {
   .login-btn {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
+    height: 2.5rem; /* Altura ajustada para header de 4rem */
   }
   
   .main-content {
-    margin-top: 5rem;
+    margin-top: 4rem; /* Ajustado para coincidir con altura del header */
     margin-bottom: 4rem;
     padding: 2rem;
   }

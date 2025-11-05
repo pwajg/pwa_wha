@@ -16,8 +16,10 @@ class FleteController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Retorna todos los fletes con sus relaciones completas
+     * Soporta filtrado por fecha (año, mes, día)
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
             $fletes = Flete::with([
