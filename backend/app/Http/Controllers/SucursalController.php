@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sucursal;
+use App\Models\ActividadUsuario;
 use Illuminate\Http\Request;
 
 class SucursalController extends Controller
@@ -37,7 +38,14 @@ class SucursalController extends Controller
             ]);
 
             $sucursal = Sucursal::create($request->all());
-
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Sucursal creada: \n--> " . "{$sucursal->nombre}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             return response()->json($sucursal, 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -75,6 +83,14 @@ class SucursalController extends Controller
                 'telefono' => 'required|string|max:20',
             ]);
             $sucursal->update($request->only(['nombre','direccion','telefono']));
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Sucursal actualizada: \n--> " . "{$sucursal->nombre}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             return response()->json([
                 'message' => 'Sucursal actualizado exitosamente',
                 'data' => $sucursal
@@ -90,10 +106,18 @@ class SucursalController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         try {
             $sucursal = Sucursal::findOrFail($id);
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Sucursal eliminada: \n--> " . "{$sucursal->nombre}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             $sucursal->delete();
 
             return response()->json([

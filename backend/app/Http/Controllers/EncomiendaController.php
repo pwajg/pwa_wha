@@ -214,6 +214,14 @@ class EncomiendaController extends Controller
                 ]);
             }
             $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Encomienda actualizada: \n--> " . "{$encomienda->codigo}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             return response()->json([
                 'message' => 'Encmienda actualizada exitosamente.',
                 'encomienda' => $encomienda,
@@ -229,7 +237,7 @@ class EncomiendaController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         try {
             $encomienda = Encomienda::find($id);
@@ -241,12 +249,24 @@ class EncomiendaController extends Controller
             }
             DB::beginTransaction();
             try {
+                // Guardar el código antes de eliminar para usarlo en el registro de actividad y respuesta
+                $codigoEncomienda = $encomienda->codigo;
+                
+                // Crear registro de actividad antes de eliminar
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Encomienda eliminada: \n--> " . "{$codigoEncomienda}",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
                 EstadoEncomienda::where('idEncomienda',$encomienda->idEncomienda)->delete();
                 $encomienda->delete();
                 DB::commit();
                 return response()->json([
                     'message' => 'Encomienda eliminada exitosamente.',
-                    'codigo' => $encomienda->codigo,
+                    'codigo' => $codigoEncomienda,
                 ], 200);
             } catch (\Exception $e) {
                 DB::rollback();
@@ -430,6 +450,14 @@ class EncomiendaController extends Controller
                     'Entregado',
                     $validated['observaciones'] ?? 'Encomienda entregada'
                 );
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Encomienda con código: {$encomienda->codigo} entregada. Actualización de estado.",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
                 DB::commit();
                 $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
                 return response()->json([
@@ -442,7 +470,7 @@ class EncomiendaController extends Controller
             }
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al actualizar flete.',
+                'message' => 'Error al actualizar encomienda.',
                 'error' => $e->getMessage(),
             ], 500);
         }

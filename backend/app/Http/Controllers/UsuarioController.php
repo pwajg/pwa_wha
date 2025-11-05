@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Usuario;
+use App\Models\ActividadUsuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -170,6 +171,14 @@ class UsuarioController extends Controller
         ]);
         $validated['password'] = Hash::make($validated['password']);
         $usuario = Usuario::create($validated);
+        $usuarioId = $request->user_id;
+        if($usuarioId) {
+            ActividadUsuario::create([
+                'descripcionActividad' => "Usuario creado: \n--> " . "{$usuario->nombre}",
+                'fecha' => now(),
+                'idUsuario' => $usuarioId
+            ]);
+        }
         return response()->json($usuario,201);
     }
 
@@ -214,17 +223,24 @@ class UsuarioController extends Controller
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         }
-        
+
         $usuario->update($validated);
         $usuario->load('sucursal');
-        
+        $usuarioId = $request->user_id;
+        if($usuarioId) {
+            ActividadUsuario::create([
+                'descripcionActividad' => "Usuario actualizado: \n--> " . "{$usuario->nombre}",
+                'fecha' => now(),
+                'idUsuario' => $usuarioId
+            ]);
+        }
         return response()->json($usuario, 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         $usuario = Usuario::find($id);
         
@@ -233,7 +249,14 @@ class UsuarioController extends Controller
                 'message' => 'Usuario no encontrado'
             ], 404);
         }
-        
+        $usuarioId = $request->user_id;
+        if($usuarioId) {
+            ActividadUsuario::create([
+                'descripcionActividad' => "Usuario eliminado: \n--> " . "{$usuario->email}" . "\n--> " . "{$usuario->nombre}",
+                'fecha' => now(),
+                'idUsuario' => $usuarioId
+            ]);
+        }
         $usuario->delete();
         
         return response()->json([

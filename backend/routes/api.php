@@ -8,6 +8,7 @@ use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\EncomiendaController;
 use App\Http\Controllers\FleteController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\ActividadController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'API funcionando']);
@@ -91,4 +92,9 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/pagos/{id}',[PagoController::class,'show']); // Funciona
     Route::put('/pagos/{id}',[PagoController::class,'update']); // Funciona | Actualiza: codigo, monto, modalidadPago
     Route::delete('/pagos/{id}',[PagoController::class,'destroy']); // Funciona | Anular un pago
+
+    // Rutas de actividades
+    Route::get('/actividades',[ActividadController::class, 'index']);
+    Route::get('/actividades/usuario/{idUsuario}',[ActividadController::class, 'actividadesUsuario']);
+    Route::get('/actividades/{id}',[ActividadController::class, 'show']);
 });
