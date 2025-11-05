@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pago;
 use App\Models\Encomienda;
+use App\Models\ActividadUsuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -85,6 +86,14 @@ class PagoController extends Controller
                 $nuevoEstadoPago = 'Parcial';
             }
             $encomienda->update(['estadoPago' => $nuevoEstadoPago]);
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Pago creado para encomienda con código: {$encomienda->codigo}. Pago: {$pago->monto}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             DB::commit();
             return response()->json([
                 'message' => 'Pago creado exitosamente',
@@ -140,7 +149,7 @@ class PagoController extends Controller
                 'modalidadPago' => 'required|in:Efectivo,Transferencia,Tarjeta,BilleteraDigital',
             ]);
             $pago = Pago::find($idPago);
-            if(!$idPago) {
+            if(!$pago) {
                 return response()->json([
                     'message' => 'Pago no encontrado.',
                     'id_buscado' => $idPago
@@ -155,6 +164,14 @@ class PagoController extends Controller
             }
             $pago->update($updateData);
             $pago->load(['Encomienda']);
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Pago actualizado.",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             return response()->json([
                 'message' => 'Pago actualizado exitosamente.',
                 'pago' => $pago,
@@ -170,7 +187,7 @@ class PagoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $idPago)
+    public function destroy(Request $request, string $idPago)
     {
         try {
             DB::beginTransaction();
@@ -193,6 +210,14 @@ class PagoController extends Controller
                 $nuevoEstado = 'Parcial';
             }
             $encomienda->update(['estadoPago' => $nuevoEstado]);
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Pago eliminado para encomienda con código {$encomienda->codigo}.",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             DB::commit();
             return response()->json([
                 'message' => 'Pago eliminado exitosamente',

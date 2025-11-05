@@ -384,6 +384,14 @@ class FleteController extends Controller
                     ])->all();
                     \DB::table('estado_encomiendas')->insert($rows);
                 }
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Flete con código: {$flete->codigo} llegó a su destino. Actualización de estado.",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId,
+                    ]);
+                }
                 DB::commit();
                 return response()->json([
                     'message' => 'Flete actualizado exitosamente.',
@@ -658,6 +666,14 @@ class FleteController extends Controller
                     ])->all();
                     \DB::table('estado_encomiendas')->insert($rows);
                 }
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Flete con código: {$flete->codigo} Reprogramado. Actualización de estado.",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
                 DB::commit();
                 $estadoReprogramado = EstadoFlete::where('idFlete',$flete->idFlete)
                     ->where('descripcionEstado','Reprogramado')
@@ -729,6 +745,14 @@ class FleteController extends Controller
                 $flete->update([
                     'idTransporte' => $validated['idTransporte']
                 ]);
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Flete con código: {$flete->codigo}. Transporte cambiado por: {$nuevoTransporte->placa}",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
                 DB::commit();
                 $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
                 return response()->json([
@@ -774,6 +798,14 @@ class FleteController extends Controller
                 $flete->update([
                     'observaciones' => $validated['observaciones']
                 ]);
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Flete con código: {$flete->codigo}. Observaciones actualizadas.",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
             }
             $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
             return response()->json([
@@ -791,7 +823,7 @@ class FleteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         try {
             $flete = Flete::find($id);
@@ -803,12 +835,25 @@ class FleteController extends Controller
             }
             DB::beginTransaction();
             try {
+                // Guardar el código antes de eliminar para usarlo en el registro de actividad y respuesta
+                $codigoFlete = $flete->codigo;
+                
+                // Crear registro de actividad antes de eliminar
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Flete eliminado con código: {$codigoFlete}",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
+                
                 EstadoFlete::where('idFlete',$flete->idFlete)->delete();
                 $flete->delete();
                 DB::commit();
                 return response()->json([
                     'message' => 'Flete eliminado exitosamente.',
-                    'codigo' => $flete->codigo,
+                    'codigo' => $codigoFlete,
                 ], 200);
             } catch (\Exception $e) {
                 DB::rollback();

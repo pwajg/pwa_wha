@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\ActividadUsuario;
 use Illuminate\Http\Request;
 
 class ClienteController extends Controller
@@ -37,6 +38,14 @@ class ClienteController extends Controller
                 'tipoCliente' => 'required|in:PersonaNatural,Empresa,Extranjero'
             ]);
             $cliente = Cliente::create($validated);
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Cliente creado: \n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             return response()->json([
                 'message' => 'Cliente creado exitosamente',
                 'data' => $cliente
@@ -99,6 +108,14 @@ class ClienteController extends Controller
                 'telefono' => 'required|string|max:20',
             ]);
             $cliente->update($request->only(['nombre','telefono']));
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Cliente Actualizado: \n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
+            }
             return response()->json([
                 'message' => 'Cliente actualizado exitosamente',
                 'data' => $cliente
@@ -114,7 +131,7 @@ class ClienteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         try {
             $cliente = Cliente::findOrFail($id);
@@ -123,6 +140,14 @@ class ClienteController extends Controller
                     'message' => 'Cliente no encontrado.',
                     'id_buscado' => $id
                 ], 404);
+            }
+            $usuarioId = $request->user_id;
+            if($usuarioId) {
+                ActividadUsuario::create([
+                    'descripcionActividad' => "Cliente eliminado:\n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
+                    'fecha' => now(),
+                    'idUsuario' => $usuarioId
+                ]);
             }
             $cliente->delete();
             return response()->json([
