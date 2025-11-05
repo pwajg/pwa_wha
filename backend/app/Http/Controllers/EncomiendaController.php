@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Encomienda;
 use App\Models\Cliente;
 use App\Models\Pago;
+use App\Models\ActividadUsuario;
+use App\Models\Usuario;
 use App\Models\Flete;
 use App\Models\EstadoEncomienda;
 use Illuminate\Http\Request;
@@ -65,7 +67,7 @@ class EncomiendaController extends Controller
     {
         try {
             // Validar datos
-            $validated =$request->validate([
+            $validated = $request->validate([
                 'descripcion' => 'required|string|max:500',
                 'estadoPago' => 'required|in:Pendiente,Parcial,Pagado',
                 'costo' => 'required|numeric|min:0',
@@ -85,6 +87,14 @@ class EncomiendaController extends Controller
             try {
                 $encomienda = Encomienda::create($validated);
                 $this->crearEstadoEncomienda($encomienda->idEncomienda, 'Registrado', 'Encomienda creada');
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => "Encomienda creada con código: {$encomienda->codigo}",
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
+                }
                 DB::commit();
                 $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
                 return response()->json([
@@ -379,4 +389,63 @@ class EncomiendaController extends Controller
             ], 500);
         }
     }
+    public function encomiendaEntregado (Request $request, string $idEncomienda) {
+        try {
+            $validated = $request->validate([
+                'observaciones' => 'nullable|string|max:500',
+            ]);
+            $encomienda = Encomienda::where('idEncomienda',$idEncomienda)->first();
+            if(!$encomienda) {
+                return response()->json([
+                    'message' => 'Encomienda no encontrada.',
+                    'id_buscado' => $idEncomienda
+                ], 404);
+            }
+            $estadoActual = EstadoEncomienda::where('idEncomienda',$encomienda->idEncomienda)
+                ->orderBy('fechaCambio', 'desc')
+                ->orderBy('idEstadoEncomienda','desc')
+                ->first();
+            $descripcionActual = $estadoActual ? trim($estadoActual->descripcionEstado) : null;
+            if(!$estadoActual || !in_array($descripcionActual,['EnDestino'])) {
+                return response()->json([
+                    'message' => 'Solo se pueden entregar encomiendas en estado "EnDestino".',
+                    'estado_actual' => $descripcionActual ?? 'Sin estado'
+                ], 400);
+            }
+            $encomienda->load('ClienteRemitente');
+            $clienteRemitente = $encomienda->ClienteRemitente;
+            if($clienteRemitente && $clienteRemitente->tipoCliente !== 'Empresa') {
+                if($encomienda->estadoPago !== 'Pagado') {
+                    return response()->json([
+                        'message' =>  'La encomienda debe ser pagada para ser entregada (cliente Remitente no es Empresa).',
+                        'estado_pago' => $encomienda->estadoPago,
+                        'tipo_cliente' => $clienteRemitente->tipoCliente
+                    ],400);
+                }
+            }
+            DB::beginTransaction();
+            try {
+                $this->crearEstadoEncomienda(
+                    $encomienda->idEncomienda,
+                    'Entregado',
+                    $validated['observaciones'] ?? 'Encomienda entregada'
+                );
+                DB::commit();
+                $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
+                return response()->json([
+                    'message' => 'Encomienda entregada exitosamente.',
+                    'encomienda' => $encomienda,
+                ],200);
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar flete.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
+

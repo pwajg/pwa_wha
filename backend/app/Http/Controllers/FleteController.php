@@ -8,6 +8,7 @@ use App\Models\Transporte;
 use App\Models\Sucursal;
 use App\Models\Usuario;
 use App\Models\EstadoFlete;
+use App\Models\ActividadUsuario;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -296,6 +297,25 @@ class FleteController extends Controller
                         'updated_at' => $now
                     ])->all();
                     \DB::table('estado_encomiendas')->insert($rows);
+                }
+                $codigosEncomiendas = \DB::table('encomiendas')
+                    ->whereIn('idEncomienda',$encomiendaIds->toArray())
+                    ->pluck('codigo')
+                    ->toArray();
+                $cantidadEncomiendas = $encomiendaIds->count();
+                $descripcionActividad = "Flete enviado con código {$flete->codigo}";
+                if(!empty($codigosEncomiendas)) {
+                    $descripcionActividad .= ". Encomiendas enviadas: {$cantidadEncomiendas}" . implode('\n--> ',$codigosEncomiendas);
+                } else {
+                    $descripcionActividad .= ". No hay encomiendas asignadas a este flete";
+                }
+                $usuarioId = $request->user_id;
+                if($usuarioId) {
+                    ActividadUsuario::create([
+                        'descripcionActividad' => $descripcionActividad,
+                        'fecha' => now(),
+                        'idUsuario' => $usuarioId
+                    ]);
                 }
                 DB::commit();
 

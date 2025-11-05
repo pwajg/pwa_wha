@@ -65,6 +65,7 @@ Route::middleware('jwt.auth')->group(function () {
     // Búsqueda pública de encomiendas por código
     Route::get('/encomiendas/{id}/pagos', [EncomiendaController::class, 'pagosEncomienda']); // Funciona  | Muestra los pagos de la encomienda
     Route::get('/encomiendas/{id}/adeudo',[EncomiendaController::class, 'adeudoEncomienda']); // Funciona | Muestra adeudo
+    Route::post('/encomiendas/{id}/entregado',[EncomiendaController::class, 'encomiendaEntregado']);
 
     // Rutas: Flete
     Route::post('/fletes', [FleteController::class, 'store']); //funciona
