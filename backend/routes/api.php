@@ -34,6 +34,8 @@ Route::get('/sucursales', [SucursalController::class, 'index']);
 // Rutas protegidas (requieren autenticación)
 Route::middleware('jwt.auth')->group(function () {
     Route::get('/me', [UsuarioController::class, 'me']); // Obtener información del usuario autenticado
+    Route::get('/user/theme', [UsuarioController::class, 'getTheme']); // Obtener preferencia de tema
+    Route::put('/user/theme', [UsuarioController::class, 'updateTheme']); // Actualizar preferencia de tema
     
     // Rutas de usuarios
     Route::get('/usuarios', [UsuarioController::class, 'index']); // Funciona

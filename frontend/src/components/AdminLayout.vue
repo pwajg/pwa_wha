@@ -56,6 +56,7 @@ export default {
   min-height: 100vh;
   background-color: var(--color-bg-soft);
   padding-top: 4rem; /* Espacio para el header fijo de 4rem */
+  transition: background-color 0.3s ease;
 }
 
 /* Contenido principal */
@@ -64,6 +65,7 @@ export default {
   padding: 2rem 1rem;
   transition: all 0.3s ease;
   margin-left: 0;
+  background-color: transparent;
 }
 
 /* Desktop: sidebar expandido */

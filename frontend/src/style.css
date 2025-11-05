@@ -24,6 +24,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Transición suave para cambios de tema */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .dark {
@@ -39,6 +42,31 @@
   --shadow-sm: 0 2px 6px rgba(0,0,0,0.4);
   --shadow-md: 0 6px 12px rgba(0,0,0,0.5);
   color-scheme: dark;
+}
+
+/* Transición suave para elementos HTML y body */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Transición suave para elementos principales */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Evitar transiciones en elementos que no deben tenerlas */
+svg,
+canvas,
+img,
+video,
+iframe {
+  transition-property: none;
 }
 
 a {

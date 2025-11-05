@@ -1,0 +1,138 @@
+/**
+ * Utilidad CSS global para variables de tema
+ * Asegura coherencia visual en toda la aplicación
+ */
+ @import "./whafren-colors.css";
+:root {
+  /* Colores primarios */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-active: #1d4ed8;
+  --color-primary-light: #dbeafe;
+  --color-primary-dark: #1e3a8a;
+  
+  /* Colores de fondo */
+  --color-bg: #f8fafc;
+  --color-bg-soft: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  
+  /* Colores de texto */
+  --color-text: #1f2937;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  
+  /* Colores de borde */
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-border-dark: #d1d5db;
+  
+  /* Colores de estado */
+  --color-success: #10b981;
+  --color-success-bg: #d1fae5;
+  --color-danger: #ef4444;
+  --color-danger-bg: #fee2e2;
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fef3c7;
+  --color-info: #3b82f6;
+  --color-info-bg: #dbeafe;
+  
+  /* Colores de hover */
+  --color-hover: #f3f4f6;
+  --color-hover-dark: #e5e7eb;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+  /* Colores primarios */
+  --color-primary: #60a5fa;
+  --color-primary-hover: #3b82f6;
+  --color-primary-active: #2563eb;
+  --color-primary-light: #1e3a8a;
+  --color-primary-dark: #1e40af;
+  
+  /* Colores de fondo */
+  --color-bg: #0b1220;
+  --color-bg-soft: #0e1526;
+  --color-surface: #111827;
+  --color-surface-elevated: #1f2937;
+  
+  /* Colores de texto */
+  --color-text: #f3f4f6;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted: #9ca3af;
+  
+  /* Colores de borde */
+  --color-border: #374151;
+  --color-border-light: #4b5563;
+  --color-border-dark: #6b7280;
+  
+  /* Colores de estado */
+  --color-success: #34d399;
+  --color-success-bg: #064e3b;
+  --color-danger: #f87171;
+  --color-danger-bg: #7f1d1d;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #78350f;
+  --color-info: #60a5fa;
+  --color-info-bg: #1e3a8a;
+  
+  /* Colores de hover */
+  --color-hover: #1f2937;
+  --color-hover-dark: #374151;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+
+.bg-primary {
+background-color: var(--color-primary);
+}
+
+.bg-primary-hover:hover {
+background-color: var(--color-primary-hover);
+}
+
+.bg-surface {
+background-color: var(--color-surface);
+}
+
+.bg-surface-elevated {
+background-color: var(--color-surface-elevated);
+}
+
+.text-primary {
+color: var(--color-text-primary);
+}
+
+.text-secondary {
+color: var(--color-text-secondary);
+}
+
+.text-muted {
+color: var(--color-text-muted);
+}
+
+.border-primary {
+border-color: var(--color-border);
+}
+
+.hover-bg {
+transition: background-color 0.2s ease-in-out;
+}
+
+.hover-bg:hover {
+background-color: var(--color-hover);
+}
+

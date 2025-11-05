@@ -109,6 +109,48 @@ class UsuarioController extends Controller
         ], 200);
     }
     
+    /**
+     * Actualizar preferencia de tema del usuario autenticado
+     */
+    public function updateTheme(Request $request) {
+        $validated = $request->validate([
+            'theme_preference' => 'required|in:light,dark',
+        ]);
+        
+        $usuario = Usuario::find($request->user_id);
+        
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        }
+        
+        $usuario->theme_preference = $validated['theme_preference'];
+        $usuario->save();
+        
+        return response()->json([
+            'message' => 'Preferencia de tema actualizada',
+            'theme_preference' => $usuario->theme_preference
+        ], 200);
+    }
+    
+    /**
+     * Obtener preferencia de tema del usuario autenticado
+     */
+    public function getTheme(Request $request) {
+        $usuario = Usuario::find($request->user_id);
+        
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        }
+        
+        return response()->json([
+            'theme_preference' => $usuario->theme_preference ?? 'light'
+        ], 200);
+    }
+    
     public function index()
     {
         return Usuario::with('sucursal')->get();
@@ -166,6 +208,7 @@ class UsuarioController extends Controller
             'password' => 'sometimes|string|min:6',
             'rol' => 'sometimes|required|in:Administrador,Colaborador',
             'idSucursal' => 'sometimes|required|exists:sucursales,id',
+            'theme_preference' => 'sometimes|required|in:light,dark',
         ]);
         
         if (isset($validated['password'])) {

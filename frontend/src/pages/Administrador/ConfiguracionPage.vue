@@ -4,7 +4,7 @@
       <!-- Header con título -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-700 dark:text-white mb-2">Configuración del Sistema</h1>
-        <p class="text-gray-600 dark:text-white">Gestiona la configuración general del sistema</p>
+        <p class="text-gray-600 dark:text-gray-300">Gestiona la configuración general del sistema</p>
       </div>
 
       <!-- Configuraciones principales -->

@@ -27,6 +27,12 @@ export default {
   background: linear-gradient(135deg, #ffffff, #f8fafc);
   border-radius: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dark .welcome-section {
+  background: linear-gradient(135deg, #111827, #1f2937);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .welcome-title {
@@ -34,12 +40,22 @@ export default {
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.dark .welcome-title {
+  color: #f9fafb;
 }
 
 .welcome-subtitle {
   font-size: 1.125rem;
   color: #6b7280;
   margin: 0;
+  transition: color 0.3s ease;
+}
+
+.dark .welcome-subtitle {
+  color: #d1d5db;
 }
 
 /* Responsive adjustments */

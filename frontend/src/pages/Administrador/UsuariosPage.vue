@@ -4,7 +4,7 @@
       <!-- Header con título -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-700 dark:text-white mb-2">Gestión de Usuarios</h1>
-        <p class="text-gray-600 dark:text-white">Administra los usuarios del sistema</p>
+        <p class="text-gray-600 dark:text-gray-300">Administra los usuarios del sistema</p>
       </div>
 
       <!-- Barra de búsqueda y botón agregar -->

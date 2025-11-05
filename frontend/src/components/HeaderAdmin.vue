@@ -3,44 +3,83 @@
   <header class="header">
     <div class="header-content">
       <!-- Botón para mostrar sidebar en móviles -->
-      <button @click="toggleSidebar" class="menu-toggle" v-if="showMenuToggle">
+      <button
+        v-if="showMenuToggle"
+        @click="toggleSidebar"
+        class="menu-toggle"
+      >
         <i class="icon">☰</i>
       </button>
-      
+
+      <!-- Logo principal -->
       <span class="logo">WHAFREN</span>
-      
-      <!-- Icono de perfil con dropdown -->
-      <div class="profile-dropdown">
-        <button @click="toggleDropdown" class="profile-btn" :class="{ 'active': showDropdown }">
-          <div class="profile-avatar">
-            {{ userInitial }}
-          </div>
-        </button>
-        
-        <!-- Dropdown menu -->
-        <div v-if="showDropdown" ref="dropdownMenu" class="dropdown-menu" :style="{ display: 'block' }">
-          <div class="user-info">
-            <div class="user-name">{{ userName }}</div>
-            <div class="user-role">{{ userRole }}</div>
-          </div>
-          <div class="dropdown-divider"></div>
-          <button @click="logout" class="dropdown-item logout-item">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            Cerrar Sesión
+
+      <!-- Botón de cambio de tema y perfil -->
+      <div class="flex items-center gap-2">
+        <ThemeToggle />
+
+        <!-- Dropdown de perfil -->
+        <div class="profile-dropdown">
+          <button
+            @click="toggleDropdown"
+            class="profile-btn"
+            :class="{ active: showDropdown }"
+          >
+            <div class="profile-avatar">
+              {{ userInitial }}
+            </div>
           </button>
+
+          <!-- Menú desplegable -->
+          <div
+            v-if="showDropdown"
+            ref="dropdownMenu"
+            class="dropdown-menu"
+            :style="{ display: 'block' }"
+          >
+            <div class="user-info">
+              <div class="user-name">{{ userName }}</div>
+              <div class="user-role">{{ userRole }}</div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <button
+              @click="logout"
+              class="dropdown-item logout-item"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </header>
 </template>
 
+
 <script>
 import axios from 'axios'
+import ThemeToggle from './ThemeToggle.vue'
 
 export default {
   name: 'HeaderAdmin',
+  components: {
+    ThemeToggle
+  },
   data() {
     return {
       showDropdown: false,
@@ -143,6 +182,11 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   box-sizing: border-box;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark .header {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .header-content {
@@ -161,6 +205,11 @@ export default {
   color: #1d4ed8;
   letter-spacing: 0.1em;
   user-select: none;
+  transition: color 0.3s ease;
+}
+
+.dark .logo {
+  color: #60a5fa;
 }
 
 /* Botón de menú para móviles */
@@ -176,14 +225,38 @@ export default {
   justify-content: center;
 }
 
+.dark .menu-toggle {
+  border-color: #4b5563;
+}
+
 .menu-toggle:hover {
   background: #f9fafb;
   border-color: #3b82f6;
 }
 
+.dark .menu-toggle:hover {
+  background: #374151;
+  border-color: #60a5fa;
+}
+
+.menu-toggle:focus,
+.menu-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.menu-toggle:active {
+  transform: scale(0.95);
+}
+
 .menu-toggle .icon {
   font-size: 1.25rem;
   color: #6b7280;
+  transition: color 0.3s ease;
+}
+
+.dark .menu-toggle .icon {
+  color: #d1d5db;
 }
 
 /* Profile dropdown styles */
@@ -233,13 +306,20 @@ export default {
   min-width: 200px !important;
   overflow: visible !important;
   z-index: 99999 !important;
-  border: 2px solid #dc2626 !important;
+  border: 1px solid #e5e7eb !important;
   opacity: 1 !important;
   visibility: visible !important;
   transform: translateY(0) !important;
   display: block !important;
   width: 200px !important;
   height: auto !important;
+  transition: all 0.2s ease !important;
+}
+
+.dark .dropdown-menu {
+  background: #1f2937 !important;
+  border-color: #4b5563 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
 @keyframes dropdownFadeIn {
@@ -256,23 +336,43 @@ export default {
 .user-info {
   padding: 1rem;
   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  transition: background 0.3s ease;
+}
+
+.dark .user-info {
+  background: linear-gradient(135deg, #374151, #4b5563);
 }
 
 .user-name {
   font-weight: 600;
   color: #1f2937;
   font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.dark .user-name {
+  color: #f9fafb;
 }
 
 .user-role {
   font-size: 0.8rem;
   color: #6b7280;
   margin-top: 0.25rem;
+  transition: color 0.3s ease;
+}
+
+.dark .user-role {
+  color: #d1d5db;
 }
 
 .dropdown-divider {
   height: 1px;
   background: #e5e7eb;
+  transition: background-color 0.3s ease;
+}
+
+.dark .dropdown-divider {
+  background: #4b5563;
 }
 
 .dropdown-item {
@@ -287,19 +387,52 @@ export default {
   gap: 0.5rem;
   font-size: 0.9rem;
   color: #374151;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark .dropdown-item {
+  color: #e5e7eb;
 }
 
 .dropdown-item:hover {
   background-color: #f9fafb;
 }
 
+.dark .dropdown-item:hover {
+  background-color: #374151;
+}
+
+.dropdown-item:focus {
+  outline: none;
+  background-color: #f3f4f6;
+}
+
+.dark .dropdown-item:focus {
+  background-color: #4b5563;
+}
+
+.dropdown-item:active {
+  background-color: #e5e7eb;
+}
+
+.dark .dropdown-item:active {
+  background-color: #1f2937;
+}
+
 .logout-item {
   color: #dc2626;
 }
 
+.dark .logout-item {
+  color: #f87171;
+}
+
 .logout-item:hover {
   background-color: #fef2f2;
+}
+
+.dark .logout-item:hover {
+  background-color: #7f1d1d;
 }
 
 .icon {

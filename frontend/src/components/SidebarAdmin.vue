@@ -12,8 +12,8 @@
 
         <button class="hamburger-btn" @click="toggleCollapse" aria-label="Alternar menú" :aria-expanded="!isCollapsed">
 
-          <Bars3Icon v-if="isCollapsed" class="h-5 w-5 text-gray-600 dark:text-white"/>
-          <ChevronLeftIcon v-else class="h-5 w-5 text-gray-600 dark:text-white"/>
+          <Bars3Icon v-if="isCollapsed" class="h-5 w-5 text-gray-700 dark:text-white"/>
+          <ChevronLeftIcon v-else class="h-5 w-5 text-gray-700 dark:text-white"/>
         </button>
 
         <h2 v-if="!isCollapsed" class="sidebar-title">Panel Admin</h2>
@@ -613,6 +613,10 @@ export default {
 .hamburger-btn:active {
   transform: scale(0.98);
   background: #f3f4f6;
+}
+
+.dark .hamburger-btn:active {
+  background: #1f2937;
 }
 
 

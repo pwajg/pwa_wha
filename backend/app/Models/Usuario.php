@@ -10,7 +10,7 @@ class Usuario extends Authenticatable
 {
     use Notifiable;
     protected $table = 'usuarios';
-    protected $fillable = ['nombre', 'email', 'password', 'rol', 'idSucursal'];
+    protected $fillable = ['nombre', 'email', 'password', 'rol', 'idSucursal', 'theme_preference'];
     protected $hidden = ['password'];
 
     public function sucursal() {

@@ -12,5 +12,18 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  optimizeDeps: {
+    include: ['xlsx', 'jspdf', 'html2canvas'],
+    esbuildOptions: {
+      supported: {
+        'top-level-await': true
+      }
+    }
+  },
+  build: {
+    commonjsOptions: {
+      include: [/xlsx/, /node_modules/]
+    }
   }
 })

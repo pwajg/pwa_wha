@@ -11,9 +11,12 @@
     
     <div class="login-container">
       <div class="login-modal">
-      <!-- Logo -->
-      <div class="logo-section">
-        <span class="logo">WAFREN</span>
+      <!-- Logo y toggle de tema -->
+      <div class="flex justify-between items-start mb-4">
+        <div class="logo-section flex-1">
+          <span class="logo">WAFREN</span>
+        </div>
+        <ThemeToggle />
       </div>
       
       <!-- Título -->
@@ -91,9 +94,13 @@
 
 <script>
 import axios from 'axios'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 export default {
   name: 'Login',
+  components: {
+    ThemeToggle
+  },
   data() {
     return { 
       email: '', 
@@ -122,6 +129,15 @@ export default {
         // Guardar datos del usuario en localStorage
         localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
         localStorage.setItem('token', response.data.token)
+        
+        // Sincronizar tema del usuario después del login
+        try {
+          const { useTheme } = await import('../composables/useTheme')
+          const { fetchUserTheme } = useTheme()
+          await fetchUserTheme()
+        } catch (error) {
+          console.warn('No se pudo sincronizar el tema del usuario:', error)
+        }
         
         // Si recordarme está marcado, guardar credenciales
         if (this.rememberMe) {
@@ -167,6 +183,11 @@ export default {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  transition: background 0.3s ease;
+}
+
+.dark .login-page {
+  background: linear-gradient(135deg, #0b1220 0%, #111a2e 100%);
 }
 
 /* Elementos de fondo borroso */
@@ -265,6 +286,12 @@ export default {
   max-width: 420px;
   position: relative;
   backdrop-filter: blur(10px);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark .login-modal {
+  background: #111a2e;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* Logo */
@@ -291,6 +318,11 @@ export default {
   font-weight: 600;
   margin-bottom: 2rem;
   margin-top: 0;
+  transition: color 0.3s ease;
+}
+
+.dark .login-title {
+  color: #f3f4f6;
 }
 
 /* Formulario */
@@ -315,6 +347,13 @@ export default {
   transition: all 0.2s ease;
   background: #f9fafb;
   box-sizing: border-box;
+  color: #1f2937;
+}
+
+.dark .form-input {
+  background: #1f2a44;
+  border-color: #1f2a44;
+  color: #f3f4f6;
 }
 
 .form-input:focus {
@@ -324,8 +363,17 @@ export default {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.dark .form-input:focus {
+  background: #111a2e;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
 .form-input::placeholder {
   color: #6b7280;
+}
+
+.dark .form-input::placeholder {
+  color: #9ca3af;
 }
 
 /* Contenedor de contraseña */
