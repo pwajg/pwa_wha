@@ -294,7 +294,7 @@ class ReporteController extends Controller
     }
 
     /**
-     * Obtener mapa de calor por zonas (ciudades)
+     * Obtener mapa de calor por zonas (sucursales registradas)
      */
     public function mapaCalorZonas(Request $request)
     {
@@ -303,98 +303,92 @@ class ReporteController extends Controller
             $fechaHasta = $request->input('fechaHasta');
             $provincia = $request->input('provincia');
 
-            $query = Encomienda::query()
-                ->with(['ClienteDestinatario', 'Flete.SucursalDestino']);
+            // Obtener todas las sucursales registradas
+            $sucursales = Sucursal::all();
+
+            // Query base para encomiendas
+            $queryEncomiendas = Encomienda::query()
+                ->with(['Flete.SucursalDestino', 'Flete.SucursalOrigen']);
 
             // Aplicar filtros de fecha
             if ($fechaDesde) {
-                $query->whereDate('created_at', '>=', $fechaDesde);
+                $queryEncomiendas->whereDate('created_at', '>=', $fechaDesde);
             }
             if ($fechaHasta) {
-                $query->whereDate('created_at', '<=', $fechaHasta);
+                $queryEncomiendas->whereDate('created_at', '<=', $fechaHasta);
             }
 
-            $encomiendas = $query->get();
+            $encomiendas = $queryEncomiendas->get();
 
-            // Zonas predefinidas
-            $zonas = [
-                // Pataz
-                ['id' => 1, 'nombre' => 'Tayabamba', 'provincia' => 'Pataz'],
-                ['id' => 2, 'nombre' => 'Chilia', 'provincia' => 'Pataz'],
-                ['id' => 3, 'nombre' => 'Huancaspata', 'provincia' => 'Pataz'],
-                ['id' => 4, 'nombre' => 'Huaylillas', 'provincia' => 'Pataz'],
-                ['id' => 5, 'nombre' => 'Huayo', 'provincia' => 'Pataz'],
-                ['id' => 6, 'nombre' => 'Ongón', 'provincia' => 'Pataz'],
-                ['id' => 7, 'nombre' => 'Parcoy', 'provincia' => 'Pataz'],
-                ['id' => 8, 'nombre' => 'Pataz', 'provincia' => 'Pataz'],
-                ['id' => 9, 'nombre' => 'Pías', 'provincia' => 'Pataz'],
-                ['id' => 10, 'nombre' => 'Santiago de Challas', 'provincia' => 'Pataz'],
-                ['id' => 11, 'nombre' => 'Taurija', 'provincia' => 'Pataz'],
-                ['id' => 12, 'nombre' => 'Urpay', 'provincia' => 'Pataz'],
-                // Trujillo
-                ['id' => 13, 'nombre' => 'Trujillo', 'provincia' => 'Trujillo'],
-                ['id' => 14, 'nombre' => 'El Porvenir', 'provincia' => 'Trujillo'],
-                ['id' => 15, 'nombre' => 'La Esperanza', 'provincia' => 'Trujillo'],
-                ['id' => 16, 'nombre' => 'Huanchaco', 'provincia' => 'Trujillo'],
-                ['id' => 17, 'nombre' => 'Moche', 'provincia' => 'Trujillo'],
-                ['id' => 18, 'nombre' => 'Salaverry', 'provincia' => 'Trujillo'],
-            ];
-
-            // Agrupar encomiendas por ciudad del destinatario
-            // Nota: Asumiendo que la ciudad está en algún campo del cliente destinatario
-            // Si no existe, podemos usar la ciudad de la sucursal destino si está disponible
-            $encomiendasPorZona = [];
-
-            foreach ($encomiendas as $encomienda) {
-                if ($encomienda->ClienteDestinatario) {
-                    // Intentar obtener la ciudad del cliente destinatario
-                    // Como no hay campo "ciudad" en clientes, usaremos un método alternativo
-                    // Por ahora, agruparemos según un patrón o según la sucursal destino si está disponible
-                    $zonaNombre = 'Trujillo'; // Por defecto
-                    
-                    // Si hay una sucursal destino, podemos obtener su ciudad
-                    if ($encomienda->Flete && $encomienda->Flete->SucursalDestino) {
-                        $zonaNombre = $encomienda->Flete->SucursalDestino->ciudad ?? 'Trujillo';
-                    }
-                    
-                    // Normalizar nombres de ciudades
-                    $zonaNombre = $this->normalizarNombreZona($zonaNombre);
-                    
-                    if (!isset($encomiendasPorZona[$zonaNombre])) {
-                        $encomiendasPorZona[$zonaNombre] = [
-                            'envios' => 0,
-                            'ingresos' => 0
-                        ];
-                    }
-                    
-                    $encomiendasPorZona[$zonaNombre]['envios']++;
-                    
-                    // Obtener ingresos de los pagos
-                    $pagos = Pago::where('idEncomienda', $encomienda->idEncomienda)->sum('monto');
-                    $encomiendasPorZona[$zonaNombre]['ingresos'] += $pagos;
-                }
-            }
-
-            // Mapear datos a las zonas predefinidas
+            // Calcular estadísticas por sucursal
             $resultado = [];
-            foreach ($zonas as $zona) {
-                $zonaNombre = $zona['nombre'];
-                $envios = $encomiendasPorZona[$zonaNombre]['envios'] ?? 0;
-                $ingresos = $encomiendasPorZona[$zonaNombre]['ingresos'] ?? 0;
-                
-                // Aplicar filtro de provincia si existe
-                if ($provincia && $zona['provincia'] !== $provincia) {
-                    continue;
+            
+            foreach ($sucursales as $sucursal) {
+                // Contar encomiendas donde esta sucursal es destino
+                $enviosDestino = $encomiendas->filter(function($encomienda) use ($sucursal) {
+                    return $encomienda->Flete && 
+                           $encomienda->Flete->idSucursalDestino == $sucursal->id;
+                })->count();
+
+                // Contar encomiendas donde esta sucursal es origen
+                $enviosOrigen = $encomiendas->filter(function($encomienda) use ($sucursal) {
+                    return $encomienda->Flete && 
+                           $encomienda->Flete->idSucursalOrigen == $sucursal->id;
+                })->count();
+
+                // Total de envíos (suma de origen y destino)
+                $totalEnvios = $enviosDestino + $enviosOrigen;
+
+                // Calcular ingresos de encomiendas conectadas a esta sucursal
+                $ingresos = 0;
+                foreach ($encomiendas as $encomienda) {
+                    $sucursalRelacionada = false;
+                    
+                    // Verificar si la encomienda está relacionada con esta sucursal
+                    if ($encomienda->Flete) {
+                        if ($encomienda->Flete->idSucursalDestino == $sucursal->id ||
+                            $encomienda->Flete->idSucursalOrigen == $sucursal->id) {
+                            $sucursalRelacionada = true;
+                        }
+                    }
+                    
+                    if ($sucursalRelacionada) {
+                        // Sumar pagos de esta encomienda
+                        $pagos = Pago::where('idEncomienda', $encomienda->idEncomienda)->sum('monto');
+                        $ingresos += $pagos;
+                    }
                 }
-                
+
+                // Aplicar filtro de provincia si existe
+                if ($provincia) {
+                    // Si la ciudad de la sucursal no coincide con la provincia, omitir
+                    $ciudadLower = strtolower($sucursal->ciudad ?? '');
+                    $provinciaLower = strtolower($provincia);
+                    
+                    // Si no hay coincidencia, continuar
+                    if (strpos($ciudadLower, $provinciaLower) === false && 
+                        strpos($provinciaLower, $ciudadLower) === false) {
+                        continue;
+                    }
+                }
+
                 $resultado[] = [
-                    'id' => $zona['id'],
-                    'nombre' => $zonaNombre,
-                    'provincia' => $zona['provincia'],
-                    'envios' => $envios,
+                    'id' => $sucursal->id,
+                    'nombre' => $sucursal->nombre,
+                    'ciudad' => $sucursal->ciudad ?? '',
+                    'direccion' => $sucursal->direccion ?? '',
+                    'telefono' => $sucursal->telefono ?? '',
+                    'envios' => $totalEnvios,
+                    'enviosOrigen' => $enviosOrigen,
+                    'enviosDestino' => $enviosDestino,
                     'ingresos' => (float) $ingresos
                 ];
             }
+
+            // Ordenar por número de envíos (mayor a menor)
+            usort($resultado, function($a, $b) {
+                return $b['envios'] - $a['envios'];
+            });
 
             return response()->json($resultado, 200);
 
@@ -404,36 +398,6 @@ class ReporteController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Normalizar nombre de zona para agrupar correctamente
-     */
-    private function normalizarNombreZona($nombre)
-    {
-        $normalizaciones = [
-            'trujillo' => 'Trujillo',
-            'el porvenir' => 'El Porvenir',
-            'la esperanza' => 'La Esperanza',
-            'huanchaco' => 'Huanchaco',
-            'moche' => 'Moche',
-            'salaverry' => 'Salaverry',
-            'tayabamba' => 'Tayabamba',
-            'chilia' => 'Chilia',
-            'huancaspata' => 'Huancaspata',
-            'huaylillas' => 'Huaylillas',
-            'huayo' => 'Huayo',
-            'ongón' => 'Ongón',
-            'parcoy' => 'Parcoy',
-            'pataz' => 'Pataz',
-            'pías' => 'Pías',
-            'santiago de challas' => 'Santiago de Challas',
-            'taurija' => 'Taurija',
-            'urpay' => 'Urpay',
-        ];
-        
-        $nombreLower = strtolower($nombre);
-        return $normalizaciones[$nombreLower] ?? 'Trujillo';
     }
 }
 

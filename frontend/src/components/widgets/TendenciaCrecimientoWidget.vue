@@ -43,7 +43,7 @@
           <p class="text-xl sm:text-2xl font-bold text-green-900 dark:text-green-100 mt-1 break-words">
             {{ vistaActual === 'envios' 
               ? metricas.total.toLocaleString() 
-              : `$${metricas.total.toLocaleString()}` }}
+              : `S/. ${metricas.total.toLocaleString()}` }}
           </p>
         </div>
         <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg p-3 sm:p-4 min-w-0">
@@ -53,7 +53,7 @@
           <p class="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1 break-words">
             {{ vistaActual === 'envios' 
               ? metricas.promedio.toLocaleString() 
-              : `$${metricas.promedio.toLocaleString()}` }}
+              : `S/. ${metricas.promedio.toLocaleString()}` }}
           </p>
         </div>
         <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg p-3 sm:p-4 min-w-0">
@@ -224,7 +224,7 @@ const chartData = computed(() => {
     labels: datos.value.map(item => item.mes),
     datasets: [
       {
-        label: vistaActual.value === 'envios' ? 'Envíos' : 'Ganancias ($)',
+        label: vistaActual.value === 'envios' ? 'Envíos' : 'Ganancias (S/.)',
         data: datos.value.map(item => 
           vistaActual.value === 'envios' ? item.envios : item.ganancias
         ),
@@ -266,7 +266,7 @@ const chartOptions = {
         label: function(context) {
           const value = context.parsed.y
           if (vistaActual.value === 'ganancias') {
-            return `$${value.toLocaleString()}`
+            return `S/. ${value.toLocaleString()}`
           }
           return `${value.toLocaleString()} envíos`
         }
@@ -282,7 +282,7 @@ const chartOptions = {
       ticks: {
         callback: function(value) {
           if (vistaActual.value === 'ganancias') {
-            return `$${value.toLocaleString()}`
+            return `S/. ${value.toLocaleString()}`
           }
           return value.toLocaleString()
         }

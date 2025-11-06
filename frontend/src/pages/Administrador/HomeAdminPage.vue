@@ -199,7 +199,7 @@ const metricasResumen = ref([
   },
   {
     label: 'Ingresos Totales',
-    valor: '$0',
+    valor: 'S/. 0',
     iconBg: 'bg-green-100 dark:bg-green-900',
     iconColor: 'text-green-600 dark:text-green-300'
   },
@@ -332,7 +332,7 @@ const formatearNumero = (numero) => {
 }
 
 const formatearMoneda = (monto) => {
-  return `$${monto.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `S/. ${monto.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 const cargarMetricasResumen = async () => {

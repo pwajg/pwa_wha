@@ -33,7 +33,7 @@
           </div>
           
           <div class="form-group">
-            <label for="costo">Costo (S/) *</label>
+            <label for="costo">Costo (S/.) *</label>
             <input 
               type="number" 
               id="costo" 
