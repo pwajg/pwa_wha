@@ -115,7 +115,7 @@
       <div v-else-if="vistaActual === 'box'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div
           v-for="flete in filteredFletes"
-          :key="flete.id"
+          :key="flete.idFlete || flete.id"
           @click="verEncomiendas(flete)"
           class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
         >
@@ -191,18 +191,9 @@
                 <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr 
-                v-for="(flete, index) in filteredFletes" 
-                :key="flete.id" 
-                :class="[
-                  index % 2 === 0 
-                    ? 'bg-white dark:bg-gray-800' 
-                    : 'bg-gray-50 dark:bg-gray-800/50',
-                  'hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out'
-                ]"
-              >
-                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="flete in filteredFletes" :key="flete.idFlete || flete.id" class="hover:bg-gray-50">
+                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ flete.codigo }}
                 </td>
                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
@@ -358,7 +349,7 @@ export default {
         if (this.filtroDia) params.dia = this.filtroDia
         
         // Si no hay filtros, cargar todos los fletes sin parámetros
-        const response = await axios.get('/fletes', Object.keys(params).length > 0 ? { params } : {})
+        const response = await axios.get('/fletes/mi-sucursal', Object.keys(params).length > 0 ? { params } : {})
         
         console.log('Respuesta de la API:', response.data)
         
@@ -371,9 +362,9 @@ export default {
             const term = this.searchTerm.toLowerCase()
             this.filteredFletes = this.fletes.filter(flete => 
               flete.codigo.toLowerCase().includes(term) ||
-              flete.sucursalOrigen?.nombre.toLowerCase().includes(term) ||
-              flete.sucursalDestino?.nombre.toLowerCase().includes(term) ||
-              flete.estado.toLowerCase().includes(term)
+              (flete.sucursalOrigen?.nombre || flete.SucursalOrigen?.nombre || '').toLowerCase().includes(term) ||
+              (flete.sucursalDestino?.nombre || flete.SucursalDestino?.nombre || '').toLowerCase().includes(term) ||
+              (flete.estado || '').toLowerCase().includes(term)
             )
           } else {
             this.filteredFletes = [...this.fletes]
@@ -409,9 +400,9 @@ export default {
           const term = this.searchTerm.toLowerCase()
           this.filteredFletes = this.fletes.filter(flete => 
             flete.codigo.toLowerCase().includes(term) ||
-            flete.sucursalOrigen?.nombre.toLowerCase().includes(term) ||
-            flete.sucursalDestino?.nombre.toLowerCase().includes(term) ||
-            flete.estado.toLowerCase().includes(term)
+            (flete.sucursalOrigen?.nombre || flete.SucursalOrigen?.nombre || '').toLowerCase().includes(term) ||
+            (flete.sucursalDestino?.nombre || flete.SucursalDestino?.nombre || '').toLowerCase().includes(term) ||
+            (flete.estado || '').toLowerCase().includes(term)
           )
         } else {
           this.filteredFletes = [...this.fletes]
@@ -430,10 +421,10 @@ export default {
     verEncomiendas(flete) {
       this.$router.push({
         name: 'FleteEncomiendas',
-        params: { fleteId: flete.id },
+        params: { fleteId: flete.idFlete || flete.id },
         query: { 
           codigo: flete.codigo,
-          destino: flete.sucursalDestino?.nombre || 'Sin destino'
+          destino: flete.sucursalDestino?.nombre || flete.SucursalDestino?.nombre || 'Sin destino'
         }
       })
     },

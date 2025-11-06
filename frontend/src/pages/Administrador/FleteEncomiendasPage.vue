@@ -75,7 +75,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="encomienda in filteredEncomiendas" :key="encomienda.id" class="hover:bg-gray-50">
+              <tr v-for="encomienda in filteredEncomiendas" :key="encomienda.idEncomienda || encomienda.id" class="hover:bg-gray-50">
                 <!-- Código -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ encomienda.codigo }}
@@ -83,12 +83,12 @@
                 
                 <!-- Cliente Remitente -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ encomienda.clienteRemitente?.nombre || 'N/A' }}
+                  {{ encomienda.clienteRemitente?.nombre || encomienda.ClienteRemitente?.nombre || 'N/A' }}
                 </td>
                 
                 <!-- Cliente Destinatario -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ encomienda.clienteDestinatario?.nombre || 'N/A' }}
+                  {{ encomienda.clienteDestinatario?.nombre || encomienda.ClienteDestinatario?.nombre || 'N/A' }}
                 </td>
                 
                 <!-- Descripción -->
@@ -589,37 +589,36 @@ export default {
     async loadEncomiendas() {
       try {
         this.loading = true
-        // Simular datos de encomiendas del flete basados en los seeders
-        this.encomiendas = [
-          {
-            id: 1,
-            codigo: 'ENC-251008-001',
-            descripcion: 'Paquete pequeño con documentos',
-            costo: 25.50,
-            estadoPago: 'Pagado',
-            observaciones: 'Fragil - Manejar con cuidado',
-            estado: 'En origen',
-            clienteRemitente: { nombre: 'Juan Carlos Pérez García' },
-            clienteDestinatario: { nombre: 'María Elena Rodríguez López' },
-            created_at: '2025-10-08'
-          },
-          {
-            id: 2,
-            codigo: 'ENC-251008-004',
-            descripcion: 'Paquete grande con ropa',
-            costo: 35.75,
-            estadoPago: 'Pagado',
-            observaciones: 'Peso: 8 kg',
-            estado: 'En origen',
-            clienteRemitente: { nombre: 'Carlos Alberto Mendoza Silva' },
-            clienteDestinatario: { nombre: 'Comercial Los Andes S.A.C.' },
-            created_at: '2025-10-08'
-          }
-        ]
+        const response  = await axios.get(`/fletes/${this.fleteId}/encomiendas`)
+        if(response.data && response.data.encomiendas) {
+          this.encomiendas = response.data.encomiendas.map(encomienda => ({
+          id: encomienda.idEncomienda,
+          idEncomienda: encomienda.idEncomienda,
+          codigo: encomienda.codigo,
+          descripcion: encomienda.descripcion,
+          costo: parseFloat(encomienda.costo) || 0,
+          estadoPago: encomienda.estadoPago,
+          observaciones: encomienda.observaciones || '',
+          estado: encomienda.estado_actual?.descripcionEstado || 'Sin estado',
+          clienteRemitente: encomienda.ClienteRemitente || encomienda.clienteRemitente || null,
+          clienteDestinatario: encomienda.ClienteDestinatario || encomienda.clienteDestinatario || null,
+          created_at: encomienda.created_at || new Date().toISOString()
+        }))
+
         this.filteredEncomiendas = [...this.encomiendas]
+        } else {
+          this.encomiendas = []
+          this.filteredEncomiendas = []
+        }
       } catch (error) {
         console.error('Error al cargar encomiendas:', error)
-        this.$toast?.error('Error al cargar encomiendas')
+        if(error.response && error.response.data && error.response.data.message) {
+          this.$toast?.error(error.response.data.message)
+        } else {
+          this.$toast?.error('Error al cargar encomiendas del flete')
+        }
+        this.encomiendas = []
+        this.filteredEncomiendas = []
       } finally {
         this.loading = false
       }
@@ -632,13 +631,13 @@ export default {
       }
       
       const term = this.searchTerm.toLowerCase()
-      this.filteredEncomiendas = this.encomiendas.filter(encomienda => 
-        encomienda.codigo.toLowerCase().includes(term) ||
-        encomienda.clienteRemitente?.nombre.toLowerCase().includes(term) ||
-        encomienda.clienteDestinatario?.nombre.toLowerCase().includes(term) ||
-        encomienda.descripcion.toLowerCase().includes(term) ||
-        encomienda.estado.toLowerCase().includes(term)
-      )
+    this.filteredEncomiendas = this.encomiendas.filter(encomienda => 
+    encomienda.codigo.toLowerCase().includes(term) ||
+    (encomienda.clienteRemitente?.nombre || encomienda.ClienteRemitente?.nombre || '').toLowerCase().includes(term) ||
+    (encomienda.clienteDestinatario?.nombre || encomienda.ClienteDestinatario?.nombre || '').toLowerCase().includes(term) ||
+    encomienda.descripcion.toLowerCase().includes(term) ||
+    (encomienda.estado || '').toLowerCase().includes(term)
+  )
     },
     
     removeFromFlete(encomiendaId) {
@@ -648,33 +647,49 @@ export default {
     
     async confirmDeleteEncomienda() {
       try {
-        const encomienda = this.encomiendas.find(e => e.id === this.encomiendaToDelete)
-      if (encomienda) {
-          // Aquí se haría la llamada a la API para eliminar
-        // Remover del flete
-          this.encomiendas = this.encomiendas.filter(e => e.id !== this.encomiendaToDelete)
-          this.filteredEncomiendas = this.filteredEncomiendas.filter(e => e.id !== this.encomiendaToDelete)
-        
+        const encomienda = this.encomiendas.find(e => e.id === this.encomiendaToDelete || e.idEncomienda === this.encomiendaToDelete)
+        if (encomienda) {
+          // Llamar a la API para actualizar la encomienda (quitar del flete)
+          await axios.put(`/encomiendas/${encomienda.idEncomienda || encomienda.id}`, {
+            idFlete: null  // Quitar del flete asignándolo a null
+          })
+          
+          // Remover del array local
+          this.encomiendas = this.encomiendas.filter(e => (e.id !== this.encomiendaToDelete && e.idEncomienda !== this.encomiendaToDelete))
+          this.filteredEncomiendas = this.filteredEncomiendas.filter(e => (e.id !== this.encomiendaToDelete && e.idEncomienda !== this.encomiendaToDelete))
+          
           this.showDeleteModal = false
           this.encomiendaToDelete = null
-        this.$toast?.success('Encomienda removida del flete')
+          this.$toast?.success('Encomienda removida del flete')
         }
       } catch (error) {
         console.error('Error al eliminar encomienda:', error)
-        this.$toast?.error('Error al eliminar encomienda')
+        if (error.response && error.response.data && error.response.data.message) {
+          this.$toast?.error(error.response.data.message)
+        } else {
+          this.$toast?.error('Error al remover encomienda del flete')
+        }
       }
     },
     
     verDetalles(encomienda) {
-      this.selectedEncomienda = encomienda
+      // Mapear datos para el modal de detalles
+      this.selectedEncomienda = {
+        ...encomienda,
+        clienteRemitente: encomienda.clienteRemitente || encomienda.ClienteRemitente || null,
+        clienteDestinatario: encomienda.clienteDestinatario || encomienda.ClienteDestinatario || null
+      }
       this.showDetailsModal = true
     },
     
     editEncomienda(encomienda) {
       this.isEditingEncomienda = true
-      this.editingEncomiendaId = encomienda.id
+      this.editingEncomiendaId = encomienda.idEncomienda || encomienda.id
       
       // Cargar datos de la encomienda en el formulario
+      const clienteRemitente = encomienda.clienteRemitente || encomienda.ClienteRemitente || {}
+      const clienteDestinatario = encomienda.clienteDestinatario || encomienda.ClienteDestinatario || {}
+      
       this.newEncomiendaForm = {
         codigo: encomienda.codigo || '',
         descripcion: encomienda.descripcion || '',
@@ -682,16 +697,16 @@ export default {
         estadoPago: encomienda.estadoPago || '',
         observaciones: encomienda.observaciones || '',
         clienteRemitente: {
-          tipoCliente: encomienda.clienteRemitente?.tipoCliente || '',
-          dni: encomienda.clienteRemitente?.dni || '',
-          nombre: encomienda.clienteRemitente?.nombre || '',
-          telefono: encomienda.clienteRemitente?.telefono || ''
+          tipoCliente: clienteRemitente.tipoCliente || '',
+          dni: clienteRemitente.numeroDocumento || clienteRemitente.dni || '',
+          nombre: clienteRemitente.nombre || '',
+          telefono: clienteRemitente.telefono || ''
         },
         clienteDestinatario: {
-          tipoCliente: encomienda.clienteDestinatario?.tipoCliente || '',
-          dni: encomienda.clienteDestinatario?.dni || '',
-          nombre: encomienda.clienteDestinatario?.nombre || '',
-          telefono: encomienda.clienteDestinatario?.telefono || ''
+          tipoCliente: clienteDestinatario.tipoCliente || '',
+          dni: clienteDestinatario.numeroDocumento || clienteDestinatario.dni || '',
+          nombre: clienteDestinatario.nombre || '',
+          telefono: clienteDestinatario.telefono || ''
         }
       }
       
@@ -807,45 +822,46 @@ export default {
       try {
         // Preparar datos para crear encomienda
         const encomiendaData = {
-          ...this.newEncomiendaForm,
-          idFlete: this.fleteId
-        }
-        
-        // Aquí se haría la llamada a la API
-        console.log('Crear encomienda:', encomiendaData)
-        
-        // Simular creación exitosa
-        const nuevaEncomienda = {
-          id: Date.now(),
           codigo: this.newEncomiendaForm.codigo,
           descripcion: this.newEncomiendaForm.descripcion,
           costo: parseFloat(this.newEncomiendaForm.costo),
           estadoPago: this.newEncomiendaForm.estadoPago,
-          observaciones: this.newEncomiendaForm.observaciones,
-          estado: 'En origen',
-          clienteRemitente: { 
-            nombre: this.newEncomiendaForm.clienteRemitente.nombre,
+          observaciones: this.newEncomiendaForm.observaciones || '',
+          idFlete: this.fleteId,  // Asignar al flete
+          idClienteRemitente: null,  // Se creará o buscará el cliente
+          idClienteDestinatario: null,  // Se creará o buscará el cliente
+          // Datos de clientes para crear/buscar
+          clienteRemitente: {
             tipoCliente: this.newEncomiendaForm.clienteRemitente.tipoCliente,
-            dni: this.newEncomiendaForm.clienteRemitente.dni,
+            numeroDocumento: this.newEncomiendaForm.clienteRemitente.dni,
+            nombre: this.newEncomiendaForm.clienteRemitente.nombre,
             telefono: this.newEncomiendaForm.clienteRemitente.telefono
           },
-          clienteDestinatario: { 
-            nombre: this.newEncomiendaForm.clienteDestinatario.nombre,
+          clienteDestinatario: {
             tipoCliente: this.newEncomiendaForm.clienteDestinatario.tipoCliente,
-            dni: this.newEncomiendaForm.clienteDestinatario.dni,
+            numeroDocumento: this.newEncomiendaForm.clienteDestinatario.dni,
+            nombre: this.newEncomiendaForm.clienteDestinatario.nombre,
             telefono: this.newEncomiendaForm.clienteDestinatario.telefono
-          },
-          created_at: new Date().toISOString().split('T')[0]
+          }
         }
         
-        this.encomiendas.push(nuevaEncomienda)
-        this.filteredEncomiendas.push(nuevaEncomienda)
+        // Llamar a la API para crear la encomienda
+        const response = await axios.post('/encomiendas', encomiendaData)
         
-        this.cancelarAgregarEncomienda()
-        this.$toast?.success('Encomienda creada y agregada al flete')
+        if (response.data) {
+          // Recargar las encomiendas del flete
+          await this.loadEncomiendas()
+          
+          this.cancelarAgregarEncomienda()
+          this.$toast?.success('Encomienda creada y agregada al flete')
+        }
       } catch (error) {
         console.error('Error al crear encomienda:', error)
-        this.$toast?.error('Error al crear encomienda')
+        if (error.response && error.response.data && error.response.data.message) {
+          this.$toast?.error(error.response.data.message)
+        } else {
+          this.$toast?.error('Error al crear encomienda')
+        }
       } finally {
         this.loading = false
       }
@@ -856,51 +872,27 @@ export default {
       try {
         // Preparar datos para actualizar encomienda
         const encomiendaData = {
-          ...this.newEncomiendaForm,
-          id: this.editingEncomiendaId
+          descripcion: this.newEncomiendaForm.descripcion,
+          costo: parseFloat(this.newEncomiendaForm.costo),
+          estadoPago: this.newEncomiendaForm.estadoPago,
+          observaciones: this.newEncomiendaForm.observaciones || ''
         }
         
-        // Aquí se haría la llamada a la API
-        console.log('Actualizar encomienda:', encomiendaData)
+        // Llamar a la API para actualizar la encomienda
+        await axios.put(`/encomiendas/${this.editingEncomiendaId}`, encomiendaData)
         
-        // Actualizar encomienda en la lista
-        const index = this.encomiendas.findIndex(e => e.id === this.editingEncomiendaId)
-        if (index !== -1) {
-          this.encomiendas[index] = {
-            ...this.encomiendas[index],
-            codigo: this.newEncomiendaForm.codigo,
-            descripcion: this.newEncomiendaForm.descripcion,
-            costo: parseFloat(this.newEncomiendaForm.costo),
-            estadoPago: this.newEncomiendaForm.estadoPago,
-            observaciones: this.newEncomiendaForm.observaciones,
-            clienteRemitente: { 
-              ...this.encomiendas[index].clienteRemitente,
-              nombre: this.newEncomiendaForm.clienteRemitente.nombre,
-              tipoCliente: this.newEncomiendaForm.clienteRemitente.tipoCliente,
-              dni: this.newEncomiendaForm.clienteRemitente.dni,
-              telefono: this.newEncomiendaForm.clienteRemitente.telefono
-            },
-            clienteDestinatario: { 
-              ...this.encomiendas[index].clienteDestinatario,
-              nombre: this.newEncomiendaForm.clienteDestinatario.nombre,
-              tipoCliente: this.newEncomiendaForm.clienteDestinatario.tipoCliente,
-              dni: this.newEncomiendaForm.clienteDestinatario.dni,
-              telefono: this.newEncomiendaForm.clienteDestinatario.telefono
-            }
-          }
-          
-          // Actualizar también en filteredEncomiendas
-          const filteredIndex = this.filteredEncomiendas.findIndex(e => e.id === this.editingEncomiendaId)
-          if (filteredIndex !== -1) {
-            this.filteredEncomiendas[filteredIndex] = this.encomiendas[index]
-          }
-        }
+        // Recargar las encomiendas del flete
+        await this.loadEncomiendas()
         
         this.cancelarAgregarEncomienda()
         this.$toast?.success('Encomienda actualizada correctamente')
       } catch (error) {
         console.error('Error al actualizar encomienda:', error)
-        this.$toast?.error('Error al actualizar encomienda')
+        if (error.response && error.response.data && error.response.data.message) {
+          this.$toast?.error(error.response.data.message)
+        } else {
+          this.$toast?.error('Error al actualizar encomienda')
+        }
       } finally {
         this.loading = false
       }

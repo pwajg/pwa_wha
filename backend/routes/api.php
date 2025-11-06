@@ -74,10 +74,12 @@ Route::middleware('jwt.auth')->group(function () {
     // Rutas: Flete
     Route::post('/fletes', [FleteController::class, 'store']); //funciona
     Route::get('/fletes', [FleteController::class, 'index']); // Funciona
+    Route::get('/fletes/por-enviar', [FleteController::class, 'fletesPorEnviar']); // Funciona | Fletes registrados del usuario autenticado
+    Route::get('/fletes/mi-sucursal', [FleteController::class, 'fletesPorSucursal']); // Funciona | Fletes registrados de la sucursal del usuario autenticado
     Route::get('/fletes/{id}',[FleteController::class,'show']); // Funciona
     Route::put('/fletes/{id}',[FleteController::class,'update']); // Funciona | Cambia observaciones
     Route::delete('/fletes/{id}',[FleteController::class,'destroy']); // Funciona
-    
+
     // Rutas adicionales para fletes
     Route::post('/fletes/{id}/enviar', [FleteController::class, 'enviarFlete']); // Funciona | Envia automaticamente las encomiendas asignadas
     Route::post('/fletes/{id}/reprogramar', [FleteController::class, 'reprogramarFlete']); // Funciona | Reprograma automaticamente las encomiendas asignadas
