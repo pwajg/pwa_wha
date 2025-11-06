@@ -61,7 +61,159 @@ class FleteController extends Controller
             ], 500);
         }
     }
-
+    public function fletesPorEnviar(Request $request) {
+        try {
+            $usuarioId = $request->user_id;
+            if(!$usuarioId) {
+                return response()->json([
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+            
+            $usuario = Usuario::find($usuarioId);
+            if(!$usuario) {  // Cambiar $usuarioId por $usuario
+                return response()->json([
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+            
+            if(!$usuario->idSucursal) {
+                return response()->json([
+                    'message' => 'Usuario no tiene sucursal asignada',
+                    'data' => []
+                ], 200);
+            }
+            
+            $fletes = Flete::with([
+                'SucursalOrigen',
+                'SucursalDestino',
+                'Transporte',
+                'estadoFletes',
+                'encomiendas' => function($query) {
+                    $query->select('idEncomienda', 'idFlete');
+                }
+            ])->where('idSucursalOrigen', $usuario->idSucursal)->get();
+            
+            $fletesPorEnviar = $fletes->map(function($flete) {
+                $estadoActual = $flete->estadoFletes()->orderBy('fechaCambio','desc')->first();
+                return [
+                    'id' => $flete->idFlete,
+                    'idFlete' => $flete->idFlete,
+                    'codigo' => $flete->codigo,
+                    'observaciones' => $flete->observaciones,
+                    'idTransporte' => $flete->idTransporte,
+                    'idSucursalOrigen' => $flete->idSucursalOrigen,
+                    'idSucursalDestino' => $flete->idSucursalDestino,
+                    'created_at' => $flete->created_at,
+                    'updated_at' => $flete->updated_at,
+                    'SucursalOrigen' => $flete->SucursalOrigen,
+                    'SucursalDestino' => $flete->SucursalDestino,
+                    'sucursalOrigen' => $flete->SucursalOrigen,  // Agregar en minúscula también
+                    'sucursalDestino' => $flete->SucursalDestino, // Agregar en minúscula también
+                    'Transporte' => $flete->Transporte,
+                    'estado_actual' => $estadoActual ? [
+                        'idEstadoFlete' => $estadoActual->idEstadoFlete,
+                        'descripcionEstado' => $estadoActual->descripcionEstado,
+                        'fechaCambio' => $estadoActual->fechaCambio
+                    ] : null,
+                    'estado' => $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado',  // CORREGIDO: usar descripcionEstado
+                    'totalEncomiendas' => $flete->encomiendas->count(),
+                ];
+            })->filter(function($flete) {
+                // CORREGIDO: comparar con el string, no con el objeto
+                return $flete['estado'] === 'Registrado';
+            })->values();
+            
+            return response()->json([
+                'message' => 'Fletes por enviar obtenidos exitosamente.',
+                'data' => $fletesPorEnviar,
+                'total' => $fletesPorEnviar->count(),
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener fletes por enviar.',
+                'error' => $e->getMessage()  // CORREGIDO: error debe estar en un array asociativo
+            ], 500);
+        }
+    }
+    public function fletesPorSucursal(Request $request) {
+        try {
+            $usuarioId = $request->user_id;
+            if(!$usuarioId) {
+                return response()->json([
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+            $usuario = Usuario::find($usuarioId);
+            if(!$usuario) {
+                return response()->json([
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+            if(!$usuario->idSucursal) {
+                return response()->json([
+                    'message' => 'Usuario no tiene sucursal asignada',
+                ],200);
+            }
+            $query = Flete::with([
+                'SucursalOrigen',
+                'SucursalDestino',
+                'Transporte',
+                'estadoFletes',
+                'encomiendas' => function($query) {
+                    $query->select('idEncomienda', 'idFlete');
+                }
+            ])->where('idSucursalOrigen',$usuario->idSucursal);
+            if($request->has('anio')) {
+                $query->whereYear('created_at', $request->anio);
+            }
+            if($request->has('mes')) {
+                $query->whereMonth('created_at', $request->mes);
+            }
+            if($request->has('dia')) {
+                $query->whereDay('created_at', $request->dia);
+            }
+            $fletes = $query->get();
+            $fletesMapeados = $fletes->map(function($flete) {
+                $estadoActual = $flete->estadoFletes()->orderBy('fechaCambio','desc')->first();
+                return [
+                    'id' => $flete->idFlete,
+                    'idFlete' => $flete->idFlete,
+                    'codigo' => $flete->codigo,
+                    'observaciones' => $flete->observaciones,
+                    'idTransporte' => $flete->idTransporte,
+                    'idSucursalOrigen' => $flete->idSucursalOrigen,
+                    'idSucursalDestino' => $flete->idSucursalDestino,
+                    'created_at' => $flete->created_at,
+                    'updated_at' => $flete->updated_at,
+                    'SucursalOrigen' => $flete->SucursalOrigen,
+                    'SucursalDestino' => $flete->SucursalDestino,
+                    'sucursalOrigen' => $flete->SucursalOrigen,
+                    'sucursalDestino' => $flete->SucursalDestino,
+                    'Transporte' => $flete->Transporte,
+                    'estado_actual' => $estadoActual ? [
+                        'idEstadoFlete' => $estadoActual->idEstadoFlete,
+                        'descripcionEstado' => $estadoActual->descripcionEstado,
+                        'fechaCambio' => $estadoActual->fechaCambio
+                    ] : null,
+                    'estado' => $estadoActual ? $estadoActual->descripcionEstado : 'Sin estado',
+                    'totalEncomiendas' => $flete->encomiendas->count(),
+                    'historial_estados' => $flete->estadoFletes,
+                    ];
+            });
+            return response()->json([
+                'message' => "Fletes por sucursal obtenidos exitosamente.",
+                'data' => $fletesMapeados,
+                'total' => $fletesMapeados->count(),
+            ],200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener fletes por sucursal: ',
+                $e->getMessage(),
+            ],500);
+        }
+    }
     /**
      * Store a newly created resource in storage.
      * Crear fletes automáticamente para todas las sucursales de destino

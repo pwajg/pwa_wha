@@ -19,14 +19,14 @@
       <div v-else-if="vistaActual === 'box'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div
           v-for="flete in filteredFletes"
-          :key="flete.id"
+          :key="flete.idFlete || flete.id"
           @click="verEncomiendas(flete)"
           class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
         >
           <!-- Header del card -->
           <div class="flex justify-between items-start mb-4">
             <div>
-              <h3 class="text-base sm:text-lg font-semibold text-gray-800">{{ flete.sucursalDestino?.nombre || 'Sin destino' }}</h3>
+              <h3 class="text-base sm:text-lg font-semibold text-gray-800">{{ flete.sucursalDestino?.nombre || flete.SucursalDestino?.nombre || 'Sin destino' }}</h3>
               <p class="text-xs sm:text-sm text-gray-500">{{ flete.codigo }}</p>
             </div>
             <span
@@ -44,7 +44,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
-              <span class="truncate">{{ flete.sucursalOrigen?.nombre || 'Sin origen' }} → {{ flete.sucursalDestino?.nombre || 'Sin destino' }}</span>
+              <span class="truncate">{{ flete.sucursalOrigen?.nombre || flete.SucursalOrigen?.nombre || 'Sin origen' }} → {{ flete.sucursalDestino?.nombre || 'Sin destino' }}</span>
             </div>
             
             <div class="flex items-center text-xs sm:text-sm text-gray-600">
@@ -99,15 +99,15 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="flete in filteredFletes" :key="flete.id" class="hover:bg-gray-50">
+              <tr v-for="flete in filteredFletes" :key="flete.idFlete || flete.id" class="hover:bg-gray-50">
                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ flete.codigo }}
                 </td>
                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ flete.sucursalOrigen?.nombre || 'N/A' }}
+                  {{ flete.sucursalOrigen?.nombre || flete.SucursalOrigen?.nombre || 'N/A' }}
                 </td>
                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ flete.sucursalDestino?.nombre || 'N/A' }}
+                  {{ flete.sucursalDestino?.nombre || flete.SucursalDestino?.nombre || 'N/A' }}
                 </td>
                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                   <span
@@ -181,16 +181,7 @@ export default {
       try {
         this.loading = true
         // Obtener fletes con filtros: estado "Registrado" y fecha de hoy
-        const hoy = new Date()
-        const params = {
-          estado: 'Registrado',
-          anio: hoy.getFullYear(),
-          mes: hoy.getMonth() + 1,
-          dia: hoy.getDate()
-        }
-        
-        const response = await axios.get('/fletes', { params })
-        
+        const response = await axios.get('/fletes/por-enviar')
         if (response.data && response.data.data) {
           this.fletes = response.data.data
           this.filteredFletes = [...this.fletes]
@@ -221,18 +212,18 @@ export default {
       const term = this.searchTerm.toLowerCase()
       this.filteredFletes = this.fletes.filter(flete => 
         flete.codigo.toLowerCase().includes(term) ||
-        flete.sucursalOrigen?.nombre.toLowerCase().includes(term) ||
-        flete.sucursalDestino?.nombre.toLowerCase().includes(term)
+        (flete.sucursalOrigen?.nombre || flete.SucursalOrigen?.nombre || '').toLowerCase().includes(term) ||
+        (flete.sucursalDestino?.nombre || flete.sucursalDestino?.nombre || '').toLowerCase().includes(term)
       )
     },
     
     verEncomiendas(flete) {
       this.$router.push({
         name: 'FleteEncomiendas',
-        params: { fleteId: flete.id },
+        params: { fleteId: flete.idFlete || flete.id },
         query: { 
           codigo: flete.codigo,
-          destino: flete.sucursalDestino?.nombre || 'Sin destino'
+          destino: flete.sucursalDestino?.nombre || flete.SucursalDestino?.nombre ||'Sin destino'
         }
       })
     },
