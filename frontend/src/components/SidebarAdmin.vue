@@ -161,12 +161,12 @@
 
           <li class="nav-item">
 
-            <router-link to="/admin/reportes" class="nav-link" :class="{ 'collapsed': isCollapsed }" @click="closeSidebar">
+            <router-link to="/admin/actividades" class="nav-link" :class="{ 'collapsed': isCollapsed }" @click="closeSidebar">
 
-              <PresentationChartBarIcon class="nav-icon h-5 w-5"/>
-              <span class="nav-text" v-if="!isCollapsed">Reportes y Estadísticas</span>
+              <ClockIcon class="nav-icon h-5 w-5"/>
+              <span class="nav-text" v-if="!isCollapsed">Actividades de Usuarios</span>
 
-              <span class="nav-tooltip" v-if="isCollapsed">Reportes</span>
+              <span class="nav-tooltip" v-if="isCollapsed">Actividades</span>
 
             </router-link>
 
@@ -194,12 +194,47 @@
 
       <!-- Toggle de tema al final del sidebar -->
       <div class="sidebar-footer">
-        <button class="theme-toggle" @click="toggleTheme" role="switch" :aria-checked="isDark.toString()" :aria-label="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
-          <div class="toggle-track" :class="{ vertical: isCollapsed }">
-            <SunIcon class="toggle-icon" :class="[ isCollapsed ? 'h-4 w-4' : 'h-4 w-4', { active: !isDark }]"/>
-            <MoonIcon class="toggle-icon" :class="[ isCollapsed ? 'h-4 w-4' : 'h-4 w-4', { active: isDark }]"/>
-            <span class="toggle-knob" :class="[{ dark: isDark }, { vertical: isCollapsed }]"></span>
-          </div>
+        <button 
+          class="theme-toggle-btn" 
+          @click="toggleTheme" 
+          :disabled="isSyncing"
+          role="switch" 
+          :aria-checked="isDark.toString()" 
+          :aria-label="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        >
+          <!-- Icono de sol (modo claro) -->
+          <svg
+            v-if="!isDark"
+            class="theme-icon transition-all duration-300"
+            :class="{ 'collapsed': isCollapsed }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+            />
+          </svg>
+          <!-- Icono de luna (modo oscuro) -->
+          <svg
+            v-else
+            class="theme-icon transition-all duration-300"
+            :class="{ 'collapsed': isCollapsed }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+            />
+          </svg>
           <span class="toggle-text" v-if="!isCollapsed">{{ isDark ? 'Oscuro' : 'Claro' }}</span>
         </button>
       </div>
@@ -222,14 +257,24 @@ import {
   UsersIcon,
   BuildingOfficeIcon,
   PresentationChartBarIcon,
-  Cog6ToothIcon,
-  SunIcon,
-  MoonIcon
+  ClipboardIcon,
+  ClockIcon,
+  Cog6ToothIcon
 } from '@heroicons/vue/24/outline'
+import { useTheme } from '../composables/useTheme'
 
 export default {
 
   name: 'SidebarAdmin',
+
+  setup() {
+    const { isDark, toggleTheme, isSyncing } = useTheme()
+    return {
+      isDark,
+      toggleTheme,
+      isSyncing
+    }
+  },
 
   data() {
 
@@ -239,8 +284,7 @@ export default {
 
       isCollapsed: false,
 
-      isFletesMenuOpen: false,
-      isDark: false
+      isFletesMenuOpen: false
     }
 
   },
@@ -280,9 +324,9 @@ export default {
     UsersIcon,
     BuildingOfficeIcon,
     PresentationChartBarIcon,
-    Cog6ToothIcon,
-    SunIcon,
-    MoonIcon
+    ClipboardIcon,
+    ClockIcon,
+    Cog6ToothIcon
   },
   methods: {
 
@@ -330,17 +374,6 @@ export default {
 
       }
 
-    },
-    toggleTheme() {
-      this.isDark = !this.isDark
-      const root = document.documentElement
-      if (this.isDark) {
-        root.classList.add('dark')
-        localStorage.setItem('theme', 'dark')
-      } else {
-        root.classList.remove('dark')
-        localStorage.setItem('theme', 'light')
-      }
     }
 
   },
@@ -364,10 +397,6 @@ export default {
       this.isFletesMenuOpen = true;
 
     }
-
-    
-    // Tema inicial segun preferencia
-    this.isDark = document.documentElement.classList.contains('dark')
     
 
     // Emitir estado inicial
@@ -1418,7 +1447,7 @@ export default {
   border-top: 1px solid var(--color-border);
 }
 
-.theme-toggle {
+.theme-toggle-btn {
   width: 100%;
   display: inline-flex;
   align-items: center;
@@ -1433,60 +1462,49 @@ export default {
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.theme-toggle:hover { background: var(--color-hover); }
-.theme-toggle:active { transform: scale(0.98); }
-
-.toggle-track {
-  position: relative;
-  width: 64px;
-  height: 30px;
-  border-radius: 999px;
+.theme-toggle-btn:hover {
   background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8px;
-  box-sizing: border-box;
 }
 
-.toggle-icon { color: var(--color-text-muted); transition: color 0.2s ease, opacity 0.2s ease; }
-.toggle-icon.active { color: var(--color-primary); }
-
-.toggle-knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 24px;
-  height: 24px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease;
-}
-.toggle-knob.dark { transform: translateX(34px); }
-
-/* Variante vertical para sidebar colapsado */
-.toggle-track.vertical {
-  width: 30px;
-  height: 64px;
-  padding: 8px 0;
-  flex-direction: column;
+.theme-toggle-btn:active {
+  transform: scale(0.98);
 }
 
-.toggle-knob.vertical {
-  top: 3px;
-  left: 3px;
+.theme-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.toggle-knob.vertical.dark {
-  transform: translateY(34px);
+.theme-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
-.sidebar.collapsed .sidebar-footer { padding: 0.5rem; }
-.sidebar.collapsed .theme-toggle { gap: 0.25rem; padding: 0.375rem; }
-.sidebar.collapsed .toggle-text { display: none; }
+.theme-icon.collapsed {
+  width: 1rem;
+  height: 1rem;
+}
+
+.toggle-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 0.5rem;
+}
+
+.sidebar.collapsed .theme-toggle-btn {
+  gap: 0.25rem;
+  padding: 0.375rem;
+}
+
+.sidebar.collapsed .toggle-text {
+  display: none;
+}
 
 
 /* Ajustes responsivos para submenú */

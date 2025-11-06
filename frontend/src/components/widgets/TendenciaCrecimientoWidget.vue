@@ -43,7 +43,7 @@
           <p class="text-xl sm:text-2xl font-bold text-green-900 dark:text-green-100 mt-1 break-words">
             {{ vistaActual === 'envios' 
               ? metricas.total.toLocaleString() 
-              : `$${metricas.total.toLocaleString()}` }}
+              : `S/. ${metricas.total.toLocaleString()}` }}
           </p>
         </div>
         <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg p-3 sm:p-4 min-w-0">
@@ -53,7 +53,7 @@
           <p class="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1 break-words">
             {{ vistaActual === 'envios' 
               ? metricas.promedio.toLocaleString() 
-              : `$${metricas.promedio.toLocaleString()}` }}
+              : `S/. ${metricas.promedio.toLocaleString()}` }}
           </p>
         </div>
         <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg p-3 sm:p-4 min-w-0">
@@ -224,7 +224,7 @@ const chartData = computed(() => {
     labels: datos.value.map(item => item.mes),
     datasets: [
       {
-        label: vistaActual.value === 'envios' ? 'Envíos' : 'Ganancias ($)',
+        label: vistaActual.value === 'envios' ? 'Envíos' : 'Ganancias (S/.)',
         data: datos.value.map(item => 
           vistaActual.value === 'envios' ? item.envios : item.ganancias
         ),
@@ -266,7 +266,7 @@ const chartOptions = {
         label: function(context) {
           const value = context.parsed.y
           if (vistaActual.value === 'ganancias') {
-            return `$${value.toLocaleString()}`
+            return `S/. ${value.toLocaleString()}`
           }
           return `${value.toLocaleString()} envíos`
         }
@@ -282,7 +282,7 @@ const chartOptions = {
       ticks: {
         callback: function(value) {
           if (vistaActual.value === 'ganancias') {
-            return `$${value.toLocaleString()}`
+            return `S/. ${value.toLocaleString()}`
           }
           return value.toLocaleString()
         }
@@ -303,23 +303,21 @@ const chartOptions = {
 const cargarDatos = async () => {
   loading.value = true
   try {
-    // Simular datos por ahora - reemplazar con llamada real a la API
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params = {}
     
-    // Datos de ejemplo para los últimos 6 meses
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio']
-    datos.value = meses.map((mes, index) => ({
-      mes,
-      envios: 300 + (index * 50) + Math.floor(Math.random() * 100),
-      ganancias: 1500000 + (index * 250000) + Math.floor(Math.random() * 500000)
-    }))
+    if (fechaDesde.value) params.fechaDesde = fechaDesde.value
+    if (fechaHasta.value) params.fechaHasta = fechaHasta.value
     
-    // TODO: Reemplazar con llamada real a la API
-    // const params = { fechaDesde: fechaDesde.value, fechaHasta: fechaHasta.value }
-    // const response = await axios.get('/api/reportes/tendencia-crecimiento', { params })
-    // datos.value = response.data
+    const response = await axios.get('/reportes/tendencia-crecimiento', { params })
+    datos.value = response.data
+    
+    // Si no hay datos, usar array vacío
+    if (!datos.value || datos.value.length === 0) {
+      datos.value = []
+    }
   } catch (error) {
     console.error('Error al cargar datos de tendencia:', error)
+    datos.value = []
   } finally {
     loading.value = false
   }
@@ -376,10 +374,18 @@ onMounted(() => {
 
 watch(() => props.fechaDesde, (nuevo) => {
   if (nuevo) fechaDesde.value = nuevo
+  cargarDatos()
 })
 
 watch(() => props.fechaHasta, (nuevo) => {
   if (nuevo) fechaHasta.value = nuevo
+  cargarDatos()
+})
+
+watch([() => props.fechaDesde, () => props.fechaHasta], () => {
+  if (props.fechaDesde || props.fechaHasta) {
+    cargarDatos()
+  }
 })
 </script>
 

@@ -465,11 +465,12 @@ class FleteController extends Controller
                 }
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => $descripcionActividad,
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        $descripcionActividad,
+                        'actualizacion',
+                        'Fletes'
+                    );
                 }
                 DB::commit();
 
@@ -540,11 +541,12 @@ class FleteController extends Controller
                 }
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Flete con código: {$flete->codigo} llegó a su destino. Actualización de estado.",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId,
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Flete con código: {$flete->codigo} llegó a su destino. Actualización de estado.",
+                        'actualizacion',
+                        'Fletes'
+                    );
                 }
                 DB::commit();
                 return response()->json([
@@ -822,11 +824,12 @@ class FleteController extends Controller
                 }
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Flete con código: {$flete->codigo} Reprogramado. Actualización de estado.",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Flete con código: {$flete->codigo} Reprogramado. Actualización de estado.",
+                        'actualizacion',
+                        'Fletes'
+                    );
                 }
                 DB::commit();
                 $estadoReprogramado = EstadoFlete::where('idFlete',$flete->idFlete)
@@ -901,11 +904,12 @@ class FleteController extends Controller
                 ]);
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Flete con código: {$flete->codigo}. Transporte cambiado por: {$nuevoTransporte->placa}",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Flete con código: {$flete->codigo}. Transporte cambiado por: {$nuevoTransporte->placa}",
+                        'actualizacion',
+                        'Fletes'
+                    );
                 }
                 DB::commit();
                 $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
@@ -954,11 +958,12 @@ class FleteController extends Controller
                 ]);
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Flete con código: {$flete->codigo}. Observaciones actualizadas.",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Flete con código: {$flete->codigo}. Observaciones actualizadas.",
+                        'actualizacion',
+                        'Fletes'
+                    );
                 }
             }
             $flete->load(['SucursalOrigen', 'SucursalDestino', 'Transporte']);
@@ -995,11 +1000,12 @@ class FleteController extends Controller
                 // Crear registro de actividad antes de eliminar
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Flete eliminado con código: {$codigoFlete}",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Flete eliminado con código: {$codigoFlete}",
+                        'eliminacion',
+                        'Fletes'
+                    );
                 }
                 
                 EstadoFlete::where('idFlete',$flete->idFlete)->delete();

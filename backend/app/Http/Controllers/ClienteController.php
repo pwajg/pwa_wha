@@ -40,11 +40,12 @@ class ClienteController extends Controller
             $cliente = Cliente::create($validated);
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Cliente creado: \n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Cliente creado: \n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
+                    'creacion',
+                    'Clientes'
+                );
             }
             return response()->json([
                 'message' => 'Cliente creado exitosamente',
@@ -110,11 +111,12 @@ class ClienteController extends Controller
             $cliente->update($request->only(['nombre','telefono']));
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Cliente Actualizado: \n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Cliente Actualizado: \n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
+                    'actualizacion',
+                    'Clientes'
+                );
             }
             return response()->json([
                 'message' => 'Cliente actualizado exitosamente',
@@ -143,11 +145,12 @@ class ClienteController extends Controller
             }
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Cliente eliminado:\n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Cliente eliminado:\n--> " . "{$cliente->numeroDocumento}" . "\n--> " . "{$cliente->nombre}",
+                    'eliminacion',
+                    'Clientes'
+                );
             }
             $cliente->delete();
             return response()->json([

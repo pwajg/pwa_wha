@@ -1,12 +1,12 @@
 <template>
   <BaseWidget
     title="Mapa de Calor de Zonas"
-    subtitle="Distritos y pueblos de Pataz y Trujillo (La Libertad, Perú)"
+    subtitle="Sucursales registradas con sus estadísticas de envíos"
     :show-filter="true"
     :show-export="true"
     :loading="loading"
     :empty="!loading && zonas.length === 0"
-    empty-message="No hay datos de zonas disponibles"
+    empty-message="No hay sucursales registradas o no hay datos disponibles"
     :icon="MapIcon"
     icon-bg="bg-purple-100 dark:bg-purple-900"
     icon-color="text-purple-600 dark:text-purple-300"
@@ -32,7 +32,7 @@
         </div>
         <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
           Total: {{ totalEnvios.toLocaleString() }} envíos | 
-          Ingresos: ${{ totalIngresos.toLocaleString() }}
+          Ingresos: S/. {{ totalIngresos.toLocaleString() }}
         </div>
       </div>
 
@@ -57,7 +57,7 @@
               {{ zona.envios }} envíos
             </p>
             <p class="text-xs font-medium text-gray-900 dark:text-white mt-1 break-words">
-              ${{ zona.ingresos.toLocaleString() }}
+              S/. {{ zona.ingresos.toLocaleString() }}
             </p>
           </div>
         </div>
@@ -68,30 +68,42 @@
           class="absolute bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-700 z-10"
           :style="{ left: tooltipPosition.x + 'px', top: tooltipPosition.y + 'px' }"
         >
-          <h5 class="font-bold text-gray-900 dark:text-white mb-2">
-            {{ zonaHover.nombre }}
-          </h5>
-          <div class="space-y-1 text-sm">
-            <p class="text-gray-600 dark:text-gray-400">
-              <span class="font-medium">Envíos:</span> {{ zonaHover.envios.toLocaleString() }}
-            </p>
-            <p class="text-gray-600 dark:text-gray-400">
-              <span class="font-medium">Ingresos:</span> ${{ zonaHover.ingresos.toLocaleString() }}
-            </p>
-            <p class="text-gray-600 dark:text-gray-400">
-              <span class="font-medium">Promedio:</span> ${{ Math.round(zonaHover.ingresos / zonaHover.envios).toLocaleString() }}
-            </p>
-            <p class="text-gray-600 dark:text-gray-400">
-              <span class="font-medium">% del total:</span> {{ ((zonaHover.envios / totalEnvios) * 100).toFixed(1) }}%
-            </p>
-          </div>
+            <h5 class="font-bold text-gray-900 dark:text-white mb-2">
+              {{ zonaHover.nombre }}
+            </h5>
+            <div class="space-y-1 text-sm">
+              <p class="text-gray-600 dark:text-gray-400" v-if="zonaHover.ciudad">
+                <span class="font-medium">Ciudad:</span> {{ zonaHover.ciudad }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400" v-if="zonaHover.direccion">
+                <span class="font-medium">Dirección:</span> {{ zonaHover.direccion }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400">
+                <span class="font-medium">Envíos:</span> {{ zonaHover.envios.toLocaleString() }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400" v-if="zonaHover.enviosOrigen !== undefined">
+                <span class="font-medium">Envíos Origen:</span> {{ zonaHover.enviosOrigen.toLocaleString() }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400" v-if="zonaHover.enviosDestino !== undefined">
+                <span class="font-medium">Envíos Destino:</span> {{ zonaHover.enviosDestino.toLocaleString() }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400">
+                <span class="font-medium">Ingresos:</span> S/. {{ zonaHover.ingresos.toLocaleString() }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400" v-if="zonaHover.envios > 0">
+                <span class="font-medium">Promedio:</span> S/. {{ Math.round(zonaHover.ingresos / zonaHover.envios).toLocaleString() }}
+              </p>
+              <p class="text-gray-600 dark:text-gray-400" v-if="totalEnvios > 0">
+                <span class="font-medium">% del total:</span> {{ ((zonaHover.envios / totalEnvios) * 100).toFixed(1) }}%
+              </p>
+            </div>
         </div>
       </div>
 
       <!-- Lista de zonas ordenadas -->
       <div class="mt-6">
         <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-3">
-          Zonas ordenadas por volumen
+          Sucursales ordenadas por volumen
         </h4>
         <div class="space-y-2">
           <div
@@ -112,7 +124,7 @@
                 {{ zona.envios }} envíos
               </span>
               <span class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                ${{ zona.ingresos.toLocaleString() }}
+                S/. {{ zona.ingresos.toLocaleString() }}
               </span>
             </div>
           </div>
@@ -132,20 +144,21 @@
         @click.stop
       >
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Filtros de Zona
+          Filtros de Sucursales
         </h3>
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Provincia
+              Ciudad/Provincia
             </label>
             <select
               v-model="filtroProvincia"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="">Todas las provincias</option>
-              <option value="Pataz">Pataz</option>
-              <option value="Trujillo">Trujillo</option>
+              <option value="">Todas las ciudades</option>
+              <option v-for="ciudad in ciudadesUnicas" :key="ciudad" :value="ciudad">
+                {{ ciudad }}
+              </option>
             </select>
           </div>
           <div>
@@ -189,11 +202,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import BaseWidget from './BaseWidget.vue'
 import axios from 'axios'
 import { exportarPDF as exportarPDFService, exportarExcel as exportarExcelService } from '../../services/exportService.js'
 import MapIcon from '../icons/MapIcon.vue'
+
+const props = defineProps({
+  fechaDesde: {
+    type: String,
+    default: ''
+  },
+  fechaHasta: {
+    type: String,
+    default: ''
+  }
+})
 
 const loading = ref(false)
 const zonas = ref([])
@@ -204,31 +228,6 @@ const filtroProvincia = ref('')
 const fechaDesde = ref('')
 const fechaHasta = ref('')
 
-// Zonas de Pataz y Trujillo (La Libertad, Perú)
-const zonasDefault = [
-  // Pataz
-  { id: 1, nombre: 'Tayabamba', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 2, nombre: 'Chilia', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 3, nombre: 'Huancaspata', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 4, nombre: 'Huaylillas', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 5, nombre: 'Huayo', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 6, nombre: 'Ongón', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 7, nombre: 'Parcoy', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 8, nombre: 'Pataz', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 9, nombre: 'Pías', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 10, nombre: 'Santiago de Challas', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 11, nombre: 'Taurija', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  { id: 12, nombre: 'Urpay', provincia: 'Pataz', envios: 0, ingresos: 0 },
-  
-  // Trujillo
-  { id: 13, nombre: 'Trujillo', provincia: 'Trujillo', envios: 0, ingresos: 0 },
-  { id: 14, nombre: 'El Porvenir', provincia: 'Trujillo', envios: 0, ingresos: 0 },
-  { id: 15, nombre: 'La Esperanza', provincia: 'Trujillo', envios: 0, ingresos: 0 },
-  { id: 16, nombre: 'Huanchaco', provincia: 'Trujillo', envios: 0, ingresos: 0 },
-  { id: 17, nombre: 'Moche', provincia: 'Trujillo', envios: 0, ingresos: 0 },
-  { id: 18, nombre: 'Salaverry', provincia: 'Trujillo', envios: 0, ingresos: 0 }
-]
-
 const coloresLeyenda = [
   'bg-yellow-200',
   'bg-yellow-300',
@@ -236,6 +235,17 @@ const coloresLeyenda = [
   'bg-orange-400',
   'bg-red-400'
 ]
+
+// Computed para obtener ciudades únicas de las sucursales
+const ciudadesUnicas = computed(() => {
+  const ciudades = new Set()
+  zonas.value.forEach(zona => {
+    if (zona.ciudad) {
+      ciudades.add(zona.ciudad)
+    }
+  })
+  return Array.from(ciudades).sort()
+})
 
 const totalEnvios = computed(() => {
   return zonas.value.reduce((sum, zona) => sum + zona.envios, 0)
@@ -250,7 +260,7 @@ const zonasOrdenadas = computed(() => {
 })
 
 const getColorIntensidad = (envios) => {
-  if (totalEnvios.value === 0) return 'rgba(254, 240, 138, 0.5)' // amarillo claro
+  if (totalEnvios.value === 0 || envios === 0) return 'rgba(254, 240, 138, 0.5)' // amarillo claro
   
   const porcentaje = (envios / totalEnvios.value) * 100
   
@@ -262,7 +272,7 @@ const getColorIntensidad = (envios) => {
 }
 
 const getColorClass = (envios) => {
-  if (totalEnvios.value === 0) return 'bg-yellow-100'
+  if (totalEnvios.value === 0 || envios === 0) return 'bg-yellow-100 text-gray-900'
   
   const porcentaje = (envios / totalEnvios.value) * 100
   
@@ -276,42 +286,25 @@ const getColorClass = (envios) => {
 const cargarDatos = async () => {
   loading.value = true
   try {
-    // Simular datos por ahora - reemplazar con llamada real a la API
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params = {}
     
-    // Generar datos de ejemplo con distribución realista
-    zonas.value = zonasDefault.map(zona => ({
-      ...zona,
-      envios: Math.floor(Math.random() * 500) + 50,
-      ingresos: Math.floor(Math.random() * 500000) + 50000
-    }))
+    if (fechaDesde.value) params.fechaDesde = fechaDesde.value
+    if (fechaHasta.value) params.fechaHasta = fechaHasta.value
+    if (filtroProvincia.value) params.provincia = filtroProvincia.value
     
-    // Trujillo y El Porvenir tienen más volumen
-    const trujilloIndex = zonas.value.findIndex(z => z.nombre === 'Trujillo')
-    const porvenirIndex = zonas.value.findIndex(z => z.nombre === 'El Porvenir')
+    const response = await axios.get('/reportes/mapa-calor-zonas', { params })
+    const datosApi = response.data
     
-    if (trujilloIndex !== -1) {
-      zonas.value[trujilloIndex].envios = Math.floor(Math.random() * 200) + 800
-      zonas.value[trujilloIndex].ingresos = Math.floor(Math.random() * 1000000) + 2000000
+    // Usar directamente los datos de la API (sucursales)
+    zonas.value = datosApi || []
+    
+    // Si no hay datos, usar array vacío
+    if (!zonas.value || zonas.value.length === 0) {
+      zonas.value = []
     }
-    
-    if (porvenirIndex !== -1) {
-      zonas.value[porvenirIndex].envios = Math.floor(Math.random() * 150) + 600
-      zonas.value[porvenirIndex].ingresos = Math.floor(Math.random() * 800000) + 1500000
-    }
-    
-    // Aplicar filtro de provincia si existe
-    if (filtroProvincia.value) {
-      zonas.value = zonas.value.filter(z => z.provincia === filtroProvincia.value)
-    }
-    
-    // TODO: Reemplazar con llamada real a la API
-    // const params = { fechaDesde: fechaDesde.value, fechaHasta: fechaHasta.value }
-    // if (filtroProvincia.value) params.provincia = filtroProvincia.value
-    // const response = await axios.get('/api/reportes/mapa-calor-zonas', { params })
-    // zonas.value = response.data
   } catch (error) {
     console.error('Error al cargar datos del mapa de calor:', error)
+    zonas.value = []
   } finally {
     loading.value = false
   }
@@ -336,13 +329,17 @@ const exportarPDF = async () => {
 const exportarExcel = () => {
   try {
     const datosParaExportar = zonas.value.map(zona => ({
-      Zona: zona.nombre,
-      Provincia: zona.provincia,
-      Envíos: zona.envios,
+      Sucursal: zona.nombre,
+      Ciudad: zona.ciudad || '',
+      Dirección: zona.direccion || '',
+      Teléfono: zona.telefono || '',
+      'Envíos Totales': zona.envios,
+      'Envíos Origen': zona.enviosOrigen || 0,
+      'Envíos Destino': zona.enviosDestino || 0,
       Ingresos: zona.ingresos
     }))
     
-    exportarExcelService(datosParaExportar, `mapa-calor-zonas-${new Date().toISOString().split('T')[0]}`, 'Mapa de Calor de Zonas')
+    exportarExcelService(datosParaExportar, `mapa-calor-sucursales-${new Date().toISOString().split('T')[0]}`, 'Mapa de Calor de Sucursales')
   } catch (error) {
     console.error('Error al exportar Excel:', error)
   }
@@ -353,10 +350,27 @@ onMounted(() => {
   const haceUnMes = new Date(hoy)
   haceUnMes.setMonth(haceUnMes.getMonth() - 1)
   
-  fechaDesde.value = haceUnMes.toISOString().split('T')[0]
-  fechaHasta.value = hoy.toISOString().split('T')[0]
+  // Si no hay props, usar valores por defecto
+  fechaDesde.value = props.fechaDesde || haceUnMes.toISOString().split('T')[0]
+  fechaHasta.value = props.fechaHasta || hoy.toISOString().split('T')[0]
   
   cargarDatos()
+})
+
+watch(() => props.fechaDesde, (nuevo) => {
+  if (nuevo) fechaDesde.value = nuevo
+  cargarDatos()
+})
+
+watch(() => props.fechaHasta, (nuevo) => {
+  if (nuevo) fechaHasta.value = nuevo
+  cargarDatos()
+})
+
+watch([() => props.fechaDesde, () => props.fechaHasta], () => {
+  if (props.fechaDesde || props.fechaHasta) {
+    cargarDatos()
+  }
 })
 </script>
 

@@ -89,11 +89,12 @@ class EncomiendaController extends Controller
                 $this->crearEstadoEncomienda($encomienda->idEncomienda, 'Registrado', 'Encomienda creada');
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Encomienda creada con código: {$encomienda->codigo}",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Encomienda creada con código: {$encomienda->codigo}",
+                        'creacion',
+                        'Encomiendas'
+                    );
                 }
                 DB::commit();
                 $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
@@ -216,11 +217,12 @@ class EncomiendaController extends Controller
             $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Encomienda actualizada: \n--> " . "{$encomienda->codigo}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Encomienda actualizada: \n--> " . "{$encomienda->codigo}",
+                    'actualizacion',
+                    'Encomiendas'
+                );
             }
             return response()->json([
                 'message' => 'Encmienda actualizada exitosamente.',
@@ -255,11 +257,12 @@ class EncomiendaController extends Controller
                 // Crear registro de actividad antes de eliminar
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Encomienda eliminada: \n--> " . "{$codigoEncomienda}",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Encomienda eliminada: \n--> " . "{$codigoEncomienda}",
+                        'eliminacion',
+                        'Encomiendas'
+                    );
                 }
                 EstadoEncomienda::where('idEncomienda',$encomienda->idEncomienda)->delete();
                 $encomienda->delete();
@@ -452,11 +455,12 @@ class EncomiendaController extends Controller
                 );
                 $usuarioId = $request->user_id;
                 if($usuarioId) {
-                    ActividadUsuario::create([
-                        'descripcionActividad' => "Encomienda con código: {$encomienda->codigo} entregada. Actualización de estado.",
-                        'fecha' => now(),
-                        'idUsuario' => $usuarioId
-                    ]);
+                    ActividadUsuario::crearActividad(
+                        $usuarioId,
+                        "Encomienda con código: {$encomienda->codigo} entregada. Actualización de estado.",
+                        'actualizacion',
+                        'Encomiendas'
+                    );
                 }
                 DB::commit();
                 $encomienda->load(['ClienteRemitente','ClienteDestinatario','Flete']);

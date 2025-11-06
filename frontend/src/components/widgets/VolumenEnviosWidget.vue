@@ -296,43 +296,16 @@ const cargarDatos = async () => {
     if (fechaDesde.value) params.fechaDesde = fechaDesde.value
     if (fechaHasta.value) params.fechaHasta = fechaHasta.value
     
-    // Simular datos por ahora - reemplazar con llamada real a la API
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const response = await axios.get('/reportes/volumen-envios', { params })
+    datos.value = response.data
     
-    // Datos de ejemplo estructurados para diferentes periodos
-    const datosEjemplo = {
-      dia: [
-        { label: '00:00', cantidad: 5, estado: 'Registrado' },
-        { label: '04:00', cantidad: 8, estado: 'Enviado' },
-        { label: '08:00', cantidad: 12, estado: 'En tránsito' },
-        { label: '12:00', cantidad: 15, estado: 'Entregado' },
-        { label: '16:00', cantidad: 10, estado: 'Registrado' },
-        { label: '20:00', cantidad: 7, estado: 'Enviado' }
-      ],
-      semana: [
-        { label: 'Lun', cantidad: 45, estado: 'Registrado' },
-        { label: 'Mar', cantidad: 52, estado: 'Enviado' },
-        { label: 'Mié', cantidad: 48, estado: 'En tránsito' },
-        { label: 'Jue', cantidad: 61, estado: 'Entregado' },
-        { label: 'Vie', cantidad: 55, estado: 'Registrado' },
-        { label: 'Sáb', cantidad: 38, estado: 'Enviado' },
-        { label: 'Dom', cantidad: 30, estado: 'Entregado' }
-      ],
-      mes: [
-        { label: 'Sem 1', cantidad: 280, estado: 'Registrado' },
-        { label: 'Sem 2', cantidad: 320, estado: 'Enviado' },
-        { label: 'Sem 3', cantidad: 295, estado: 'En tránsito' },
-        { label: 'Sem 4', cantidad: 350, estado: 'Entregado' }
-      ]
+    // Si no hay datos, usar array vacío
+    if (!datos.value || datos.value.length === 0) {
+      datos.value = []
     }
-    
-    datos.value = datosEjemplo[periodo.value] || datosEjemplo.semana
-    
-    // TODO: Reemplazar con llamada real a la API
-    // const response = await axios.get('/api/reportes/volumen-envios', { params })
-    // datos.value = response.data
   } catch (error) {
     console.error('Error al cargar datos de volumen de envíos:', error)
+    datos.value = []
   } finally {
     loading.value = false
   }
@@ -394,10 +367,18 @@ onMounted(() => {
 
 watch(() => props.fechaDesde, (nuevo) => {
   if (nuevo) fechaDesde.value = nuevo
+  cargarDatos()
 })
 
 watch(() => props.fechaHasta, (nuevo) => {
   if (nuevo) fechaHasta.value = nuevo
+  cargarDatos()
+})
+
+watch([() => props.fechaDesde, () => props.fechaHasta], () => {
+  if (props.fechaDesde || props.fechaHasta) {
+    cargarDatos()
+  }
 })
 </script>
 

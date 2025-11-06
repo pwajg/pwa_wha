@@ -173,11 +173,12 @@ class UsuarioController extends Controller
         $usuario = Usuario::create($validated);
         $usuarioId = $request->user_id;
         if($usuarioId) {
-            ActividadUsuario::create([
-                'descripcionActividad' => "Usuario creado: \n--> " . "{$usuario->nombre}",
-                'fecha' => now(),
-                'idUsuario' => $usuarioId
-            ]);
+            ActividadUsuario::crearActividad(
+                $usuarioId,
+                "Usuario creado: \n--> " . "{$usuario->nombre}",
+                'creacion',
+                'Usuarios'
+            );
         }
         return response()->json($usuario,201);
     }
@@ -228,11 +229,12 @@ class UsuarioController extends Controller
         $usuario->load('sucursal');
         $usuarioId = $request->user_id;
         if($usuarioId) {
-            ActividadUsuario::create([
-                'descripcionActividad' => "Usuario actualizado: \n--> " . "{$usuario->nombre}",
-                'fecha' => now(),
-                'idUsuario' => $usuarioId
-            ]);
+            ActividadUsuario::crearActividad(
+                $usuarioId,
+                "Usuario actualizado: \n--> " . "{$usuario->nombre}",
+                'actualizacion',
+                'Usuarios'
+            );
         }
         return response()->json($usuario, 200);
     }
@@ -251,11 +253,12 @@ class UsuarioController extends Controller
         }
         $usuarioId = $request->user_id;
         if($usuarioId) {
-            ActividadUsuario::create([
-                'descripcionActividad' => "Usuario eliminado: \n--> " . "{$usuario->email}" . "\n--> " . "{$usuario->nombre}",
-                'fecha' => now(),
-                'idUsuario' => $usuarioId
-            ]);
+            ActividadUsuario::crearActividad(
+                $usuarioId,
+                "Usuario eliminado: \n--> " . "{$usuario->email}" . "\n--> " . "{$usuario->nombre}",
+                'eliminacion',
+                'Usuarios'
+            );
         }
         $usuario->delete();
         

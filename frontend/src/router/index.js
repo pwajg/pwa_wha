@@ -10,7 +10,7 @@ import TodosFletesPage from '../pages/Administrador/TodosFletesPage.vue';
 import FleteEncomiendasPage from '../pages/Administrador/FleteEncomiendasPage.vue';
 import UsuariosPage from '../pages/Administrador/UsuariosPage.vue';
 import SucursalesPage from '../pages/Administrador/SucursalesPage.vue';
-import ReportesPage from '../pages/Administrador/ReportesPage.vue';
+import ActividadesPage from '../pages/Administrador/ActividadesPage.vue';
 import ConfiguracionPage from '../pages/Administrador/ConfiguracionPage.vue';
 
 const routes = [
@@ -84,9 +84,9 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true } 
     },
     { 
-        path: '/admin/reportes', 
-        name: 'Reportes', 
-        component: ReportesPage, 
+        path: '/admin/actividades', 
+        name: 'Actividades', 
+        component: ActividadesPage, 
         meta: { requiresAuth: true, requiresAdmin: true } 
     },
     { 

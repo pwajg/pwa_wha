@@ -108,7 +108,7 @@
                 
                 <!-- Costo -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  S/ {{ encomienda.costo?.toFixed(2) || '0.00' }}
+                  S/. {{ encomienda.costo?.toFixed(2) || '0.00' }}
                 </td>
                 
                 <!-- Fecha -->
@@ -215,7 +215,7 @@
                 </div>
                 
                 <div>
-                  <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Costo (S/) *</label>
+                  <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Costo (S/.) *</label>
                   <input
                     v-model="newEncomiendaForm.costo"
                     type="number"
@@ -435,7 +435,7 @@
                 <div class="space-y-3">
                   <div>
                     <p class="text-xs font-medium text-gray-500 uppercase mb-1">Costo</p>
-                    <p class="text-lg font-semibold text-gray-900">S/ {{ selectedEncomienda.costo?.toFixed(2) || '0.00' }}</p>
+                    <p class="text-lg font-semibold text-gray-900">S/. {{ selectedEncomienda.costo?.toFixed(2) || '0.00' }}</p>
                   </div>
                   <div>
                     <p class="text-xs font-medium text-gray-500 uppercase mb-1">Estado de Pago</p>
