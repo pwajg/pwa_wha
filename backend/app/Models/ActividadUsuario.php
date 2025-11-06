@@ -13,6 +13,8 @@ class ActividadUsuario extends Model
     public $timestamps = true;
     protected $fillable = [
         'descripcionActividad',
+        'tipo_accion',
+        'modulo',
         'fecha',
         'idUsuario'
     ];
@@ -24,5 +26,18 @@ class ActividadUsuario extends Model
 
     public function usuario(){
         return $this->belongsTo(Usuario::class,'idUsuario','id');
+    }
+    
+    /**
+     * Crea una actividad de usuario con tipo y módulo
+     */
+    public static function crearActividad($usuarioId, $descripcion, $tipoAccion, $modulo) {
+        return self::create([
+            'descripcionActividad' => $descripcion,
+            'tipo_accion' => $tipoAccion,
+            'modulo' => $modulo,
+            'fecha' => now(),
+            'idUsuario' => $usuarioId
+        ]);
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\EncomiendaController;
 use App\Http\Controllers\FleteController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ActividadController;
+use App\Http\Controllers\ReporteController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'API funcionando']);
@@ -97,4 +98,10 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/actividades',[ActividadController::class, 'index']);
     Route::get('/actividades/usuario/{idUsuario}',[ActividadController::class, 'actividadesUsuario']);
     Route::get('/actividades/{id}',[ActividadController::class, 'show']);
+
+    // Rutas de reportes
+    Route::get('/reportes/metricas-resumen', [ReporteController::class, 'metricasResumen']);
+    Route::get('/reportes/volumen-envios', [ReporteController::class, 'volumenEnvios']);
+    Route::get('/reportes/tendencia-crecimiento', [ReporteController::class, 'tendenciaCrecimiento']);
+    Route::get('/reportes/mapa-calor-zonas', [ReporteController::class, 'mapaCalorZonas']);
 });

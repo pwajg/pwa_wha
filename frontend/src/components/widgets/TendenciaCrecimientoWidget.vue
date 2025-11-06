@@ -303,23 +303,21 @@ const chartOptions = {
 const cargarDatos = async () => {
   loading.value = true
   try {
-    // Simular datos por ahora - reemplazar con llamada real a la API
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params = {}
     
-    // Datos de ejemplo para los últimos 6 meses
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio']
-    datos.value = meses.map((mes, index) => ({
-      mes,
-      envios: 300 + (index * 50) + Math.floor(Math.random() * 100),
-      ganancias: 1500000 + (index * 250000) + Math.floor(Math.random() * 500000)
-    }))
+    if (fechaDesde.value) params.fechaDesde = fechaDesde.value
+    if (fechaHasta.value) params.fechaHasta = fechaHasta.value
     
-    // TODO: Reemplazar con llamada real a la API
-    // const params = { fechaDesde: fechaDesde.value, fechaHasta: fechaHasta.value }
-    // const response = await axios.get('/api/reportes/tendencia-crecimiento', { params })
-    // datos.value = response.data
+    const response = await axios.get('/reportes/tendencia-crecimiento', { params })
+    datos.value = response.data
+    
+    // Si no hay datos, usar array vacío
+    if (!datos.value || datos.value.length === 0) {
+      datos.value = []
+    }
   } catch (error) {
     console.error('Error al cargar datos de tendencia:', error)
+    datos.value = []
   } finally {
     loading.value = false
   }
@@ -376,10 +374,18 @@ onMounted(() => {
 
 watch(() => props.fechaDesde, (nuevo) => {
   if (nuevo) fechaDesde.value = nuevo
+  cargarDatos()
 })
 
 watch(() => props.fechaHasta, (nuevo) => {
   if (nuevo) fechaHasta.value = nuevo
+  cargarDatos()
+})
+
+watch([() => props.fechaDesde, () => props.fechaHasta], () => {
+  if (props.fechaDesde || props.fechaHasta) {
+    cargarDatos()
+  }
 })
 </script>
 

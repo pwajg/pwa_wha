@@ -189,11 +189,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import BaseWidget from './BaseWidget.vue'
 import axios from 'axios'
 import { exportarPDF as exportarPDFService, exportarExcel as exportarExcelService } from '../../services/exportService.js'
 import MapIcon from '../icons/MapIcon.vue'
+
+const props = defineProps({
+  fechaDesde: {
+    type: String,
+    default: ''
+  },
+  fechaHasta: {
+    type: String,
+    default: ''
+  }
+})
 
 const loading = ref(false)
 const zonas = ref([])
@@ -276,42 +287,33 @@ const getColorClass = (envios) => {
 const cargarDatos = async () => {
   loading.value = true
   try {
-    // Simular datos por ahora - reemplazar con llamada real a la API
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params = {}
     
-    // Generar datos de ejemplo con distribución realista
-    zonas.value = zonasDefault.map(zona => ({
-      ...zona,
-      envios: Math.floor(Math.random() * 500) + 50,
-      ingresos: Math.floor(Math.random() * 500000) + 50000
-    }))
+    if (fechaDesde.value) params.fechaDesde = fechaDesde.value
+    if (fechaHasta.value) params.fechaHasta = fechaHasta.value
+    if (filtroProvincia.value) params.provincia = filtroProvincia.value
     
-    // Trujillo y El Porvenir tienen más volumen
-    const trujilloIndex = zonas.value.findIndex(z => z.nombre === 'Trujillo')
-    const porvenirIndex = zonas.value.findIndex(z => z.nombre === 'El Porvenir')
+    const response = await axios.get('/reportes/mapa-calor-zonas', { params })
+    const datosApi = response.data
     
-    if (trujilloIndex !== -1) {
-      zonas.value[trujilloIndex].envios = Math.floor(Math.random() * 200) + 800
-      zonas.value[trujilloIndex].ingresos = Math.floor(Math.random() * 1000000) + 2000000
+    // Mapear datos de la API a las zonas predefinidas
+    // Si una zona viene en la respuesta, usar sus datos, sino usar 0
+    zonas.value = zonasDefault.map(zonaDefault => {
+      const zonaApi = datosApi.find(z => z.nombre === zonaDefault.nombre)
+      return {
+        ...zonaDefault,
+        envios: zonaApi ? zonaApi.envios : 0,
+        ingresos: zonaApi ? zonaApi.ingresos : 0
+      }
+    })
+    
+    // Si no hay datos, usar array vacío
+    if (!zonas.value || zonas.value.length === 0) {
+      zonas.value = zonasDefault.map(z => ({ ...z, envios: 0, ingresos: 0 }))
     }
-    
-    if (porvenirIndex !== -1) {
-      zonas.value[porvenirIndex].envios = Math.floor(Math.random() * 150) + 600
-      zonas.value[porvenirIndex].ingresos = Math.floor(Math.random() * 800000) + 1500000
-    }
-    
-    // Aplicar filtro de provincia si existe
-    if (filtroProvincia.value) {
-      zonas.value = zonas.value.filter(z => z.provincia === filtroProvincia.value)
-    }
-    
-    // TODO: Reemplazar con llamada real a la API
-    // const params = { fechaDesde: fechaDesde.value, fechaHasta: fechaHasta.value }
-    // if (filtroProvincia.value) params.provincia = filtroProvincia.value
-    // const response = await axios.get('/api/reportes/mapa-calor-zonas', { params })
-    // zonas.value = response.data
   } catch (error) {
     console.error('Error al cargar datos del mapa de calor:', error)
+    zonas.value = zonasDefault.map(z => ({ ...z, envios: 0, ingresos: 0 }))
   } finally {
     loading.value = false
   }
@@ -353,10 +355,27 @@ onMounted(() => {
   const haceUnMes = new Date(hoy)
   haceUnMes.setMonth(haceUnMes.getMonth() - 1)
   
-  fechaDesde.value = haceUnMes.toISOString().split('T')[0]
-  fechaHasta.value = hoy.toISOString().split('T')[0]
+  // Si no hay props, usar valores por defecto
+  fechaDesde.value = props.fechaDesde || haceUnMes.toISOString().split('T')[0]
+  fechaHasta.value = props.fechaHasta || hoy.toISOString().split('T')[0]
   
   cargarDatos()
+})
+
+watch(() => props.fechaDesde, (nuevo) => {
+  if (nuevo) fechaDesde.value = nuevo
+  cargarDatos()
+})
+
+watch(() => props.fechaHasta, (nuevo) => {
+  if (nuevo) fechaHasta.value = nuevo
+  cargarDatos()
+})
+
+watch([() => props.fechaDesde, () => props.fechaHasta], () => {
+  if (props.fechaDesde || props.fechaHasta) {
+    cargarDatos()
+  }
 })
 </script>
 

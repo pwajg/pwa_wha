@@ -88,11 +88,12 @@ class PagoController extends Controller
             $encomienda->update(['estadoPago' => $nuevoEstadoPago]);
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Pago creado para encomienda con código: {$encomienda->codigo}. Pago: {$pago->monto}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Pago creado para encomienda con código: {$encomienda->codigo}. Pago: {$pago->monto}",
+                    'creacion',
+                    'Pagos'
+                );
             }
             DB::commit();
             return response()->json([
@@ -166,11 +167,12 @@ class PagoController extends Controller
             $pago->load(['Encomienda']);
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Pago actualizado.",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Pago actualizado.",
+                    'actualizacion',
+                    'Pagos'
+                );
             }
             return response()->json([
                 'message' => 'Pago actualizado exitosamente.',
@@ -212,11 +214,12 @@ class PagoController extends Controller
             $encomienda->update(['estadoPago' => $nuevoEstado]);
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Pago eliminado para encomienda con código {$encomienda->codigo}.",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Pago eliminado para encomienda con código {$encomienda->codigo}.",
+                    'eliminacion',
+                    'Pagos'
+                );
             }
             DB::commit();
             return response()->json([

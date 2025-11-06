@@ -14,10 +14,8 @@
       <!-- Logo principal -->
       <span class="logo">WHAFREN</span>
 
-      <!-- Botón de cambio de tema y perfil -->
+      <!-- Botón de perfil -->
       <div class="flex items-center gap-2">
-        <ThemeToggle />
-
         <!-- Dropdown de perfil -->
         <div class="profile-dropdown">
           <button
@@ -73,13 +71,9 @@
 
 <script>
 import axios from 'axios'
-import ThemeToggle from './ThemeToggle.vue'
 
 export default {
   name: 'HeaderAdmin',
-  components: {
-    ThemeToggle
-  },
   data() {
     return {
       showDropdown: false,

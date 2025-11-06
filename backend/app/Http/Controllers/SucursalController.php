@@ -40,11 +40,12 @@ class SucursalController extends Controller
             $sucursal = Sucursal::create($request->all());
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Sucursal creada: \n--> " . "{$sucursal->nombre}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Sucursal creada: \n--> " . "{$sucursal->nombre}",
+                    'creacion',
+                    'Sucursales'
+                );
             }
             return response()->json($sucursal, 201);
         } catch (\Exception $e) {
@@ -85,11 +86,12 @@ class SucursalController extends Controller
             $sucursal->update($request->only(['nombre','direccion','telefono']));
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Sucursal actualizada: \n--> " . "{$sucursal->nombre}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Sucursal actualizada: \n--> " . "{$sucursal->nombre}",
+                    'actualizacion',
+                    'Sucursales'
+                );
             }
             return response()->json([
                 'message' => 'Sucursal actualizado exitosamente',
@@ -112,11 +114,12 @@ class SucursalController extends Controller
             $sucursal = Sucursal::findOrFail($id);
             $usuarioId = $request->user_id;
             if($usuarioId) {
-                ActividadUsuario::create([
-                    'descripcionActividad' => "Sucursal eliminada: \n--> " . "{$sucursal->nombre}",
-                    'fecha' => now(),
-                    'idUsuario' => $usuarioId
-                ]);
+                ActividadUsuario::crearActividad(
+                    $usuarioId,
+                    "Sucursal eliminada: \n--> " . "{$sucursal->nombre}",
+                    'eliminacion',
+                    'Sucursales'
+                );
             }
             $sucursal->delete();
 
